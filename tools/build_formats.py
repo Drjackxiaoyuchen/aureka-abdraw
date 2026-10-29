@@ -33,11 +33,14 @@ def fc_pairs(t1, t2, hinge=True, hss=2):
     if hinge: p.insert(0, (f'{t1}h', f'{t2}h', hss))
     return p
 
-def scfv(tag, spec, order='HL'):
-    """single-chain Fv as a domain run with its internal linker"""
+def scfv(tag, spec, order='HL', length=15):
+    """single-chain Fv as a domain run with its internal linker.
+       15 residues ((G4S)3) lets VH and VL fold back on each other; shortening it is what
+       forces the cross-pairing that distinguishes a diabody from an scFv."""
+    lk = f'L#{tag}l[LENGTH:{length}]'
     if order == 'HL':
-        return [f'VH.{spec}#{tag}vh', f'L#{tag}l', f'VL.{spec}#{tag}vl'], [(f'{tag}vh', f'{tag}vl', 0)]
-    return [f'VL.{spec}#{tag}vl', f'L#{tag}l', f'VH.{spec}#{tag}vh'], [(f'{tag}vh', f'{tag}vl', 0)]
+        return [f'VH.{spec}#{tag}vh', lk, f'VL.{spec}#{tag}vl'], [(f'{tag}vh', f'{tag}vl', 0)]
+    return [f'VL.{spec}#{tag}vl', lk, f'VH.{spec}#{tag}vh'], [(f'{tag}vh', f'{tag}vl', 0)]
 
 def igg(a='a', b=None, knob=True, **kw):
     """Symmetric IgG when b is None, asymmetric knob-into-hole bispecific otherwise."""
@@ -118,10 +121,10 @@ F('VHH (nanobody)', 'Fragments', 'A single camelid heavy-chain variable domain t
   {'chains': [['VHH.a#v']], 'pairs': []})
 
 F('Biparatopic VHH', 'Fragments', 'Two VHH domains in tandem, each raised against a different epitope on one target.',
-  {'chains': [['VHH.a#v1','L#l1','VHH.b#v2']], 'pairs': []})
+  {'chains': [['VHH.a#v1','L#l1[LENGTH:15]','VHH.b#v2']], 'pairs': []})
 
 F('Trivalent VHH', 'Fragments', 'Three linked VHH domains giving three binding specificities on one short chain.',
-  {'chains': [['VHH.a#v1','L#l1','VHH.b#v2','L#l2','VHH.c#v3']], 'pairs': []})
+  {'chains': [['VHH.a#v1','L#l1[LENGTH:15]','VHH.b#v2','L#l2[LENGTH:15]','VHH.c#v3']], 'pairs': []})
 
 # ---- Canonical -----------------------------------------------------------
 F('IgG1', 'Canonical', 'The parental monospecific, bivalent antibody that every format below modifies.', igg('a'))
@@ -176,8 +179,8 @@ F('kappa-lambda body', 'Asymmetric bispecific IgG',
 
 # ---- Appended IgG --------------------------------------------------------
 def _dvd(tag, inner, outer):
-    H = [f'VH.{outer}#{tag}ov', f'L#{tag}ol', f'VH.{inner}#{tag}iv', f'CH1#{tag}hc']
-    L = [f'VL.{outer}#{tag}olv', f'L#{tag}oll', f'VL.{inner}#{tag}ilv', f'CL#{tag}lc']
+    H = [f'VH.{outer}#{tag}ov', f'L#{tag}ol[LENGTH:6]', f'VH.{inner}#{tag}iv', f'CH1#{tag}hc']
+    L = [f'VL.{outer}#{tag}olv', f'L#{tag}oll[LENGTH:6]', f'VL.{inner}#{tag}ilv', f'CL#{tag}lc']
     P = [(f'{tag}ov', f'{tag}olv', 0), (f'{tag}iv', f'{tag}ilv', 0), (f'{tag}hc', f'{tag}lc', 1)]
     return H, L, P
 _H1,_L1,_P1 = _dvd('p','a','b'); _H2,_L2,_P2 = _dvd('q','a','b')
@@ -190,11 +193,11 @@ def _igg_append(tag_app, spec_app, where):
     H1,L1,P1 = arm('p','a'); H2,L2,P2 = arm('q','a')
     s1,sp1 = scfv('r', spec_app); s2,sp2 = scfv('t', spec_app)
     if where == 'H':
-        c1 = H1 + fc('p') + ['L#rlk'] + s1
-        c2 = H2 + fc('q') + ['L#tlk'] + s2
+        c1 = H1 + fc('p') + ['L#rlk[LENGTH:15]'] + s1
+        c2 = H2 + fc('q') + ['L#tlk[LENGTH:15]'] + s2
         return {'chains': [c1, L1, c2, L2], 'pairs': P1+P2+fc_pairs('p','q')+sp1+sp2}
     c1 = H1 + fc('p'); c2 = H2 + fc('q')
-    return {'chains': [c1, L1 + ['L#rlk'] + s1, c2, L2 + ['L#tlk'] + s2],
+    return {'chains': [c1, L1 + ['L#rlk[LENGTH:15]'] + s1, c2, L2 + ['L#tlk[LENGTH:15]'] + s2],
             'pairs': P1+P2+fc_pairs('p','q')+sp1+sp2}
 
 F('IgG-scFv (heavy C-term)', 'Appended IgG',
@@ -208,13 +211,13 @@ _H1,_L1,_P1 = arm('p','a'); _H2,_L2,_P2 = arm('q','a')
 _s1,_sp1 = scfv('r','b'); _s2,_sp2 = scfv('t','b')
 F('scFv-IgG (heavy N-term)', 'Appended IgG',
   'An scFv placed ahead of each VH, so the second specificity sits at the tip of the arm.',
-  {'chains': [_s1+['L#rlk']+_H1+fc('p'), _L1, _s2+['L#tlk']+_H2+fc('q'), _L2],
+  {'chains': [_s1+['L#rlk[LENGTH:15]']+_H1+fc('p'), _L1, _s2+['L#tlk[LENGTH:15]']+_H2+fc('q'), _L2],
    'pairs': _P1+_P2+fc_pairs('p','q')+_sp1+_sp2})
 
 _H1,_L1,_P1 = arm('p','a'); _H2,_L2,_P2 = arm('q','a')
 F('IgG-VHH', 'Appended IgG',
   'A single VHH domain on each heavy-chain C-terminus — the smallest symmetric append.',
-  {'chains': [_H1+fc('p')+['L#rl','VHH.b#rv'], _L1, _H2+fc('q')+['L#tl','VHH.b#tv'], _L2],
+  {'chains': [_H1+fc('p')+['L#rl[LENGTH:15]','VHH.b#rv'], _L1, _H2+fc('q')+['L#tl[LENGTH:15]','VHH.b#tv'], _L2],
    'pairs': _P1+_P2+fc_pairs('p','q')})
 
 F('Two-in-one Fab (DAF)', 'Appended IgG',
@@ -231,34 +234,34 @@ F('ADC (site-specific)', 'Appended IgG',
 _a,_pa = scfv('x','a'); _b,_pb = scfv('y','b')
 F('BiTE (tandem scFv)', 'Fragment bispecifics',
   'Two scFvs in tandem on one chain — the T-cell engager archetype, no Fc at all.',
-  {'chains': [_a + ['L#mid'] + _b], 'pairs': _pa+_pb})
+  {'chains': [_a + ['L#mid[LENGTH:5]'] + _b], 'pairs': _pa+_pb})
 
 F('Diabody', 'Fragment bispecifics',
-  'Linkers too short to fold back, so two chains cross-pair into a compact bivalent dimer.',
-  {'chains': [['VH.a#c1vh','L#c1l','VL.b#c1vl'], ['VH.b#c2vh','L#c2l','VL.a#c2vl']],
+  'A 5-residue linker is too short for VH to fold back onto its own VL, so two chains cross-pair.',
+  {'chains': [['VH.a#c1vh','L#c1l[LENGTH:5]','VL.b#c1vl'], ['VH.b#c2vh','L#c2l[LENGTH:5]','VL.a#c2vl']],
    'pairs': [('c1vh','c2vl',0), ('c2vh','c1vl',0)]})
 
 F('scDiabody', 'Fragment bispecifics',
   'The diabody folded onto a single chain by adding a third, longer middle linker.',
-  {'chains': [['VH.a#vha','L#l1','VL.b#vlb','L#l2','VH.b#vhb','L#l3','VL.a#vla']],
+  {'chains': [['VH.a#vha','L#l1[LENGTH:5]','VL.b#vlb','L#l2[LENGTH:15]','VH.b#vhb','L#l3[LENGTH:5]','VL.a#vla']],
    'pairs': [('vha','vla',0), ('vhb','vlb',0)]})
 
 F('DART', 'Fragment bispecifics',
   'A diabody locked by an added C-terminal interchain disulfide for stability.',
-  {'chains': [['VH.a#c1vh','L#c1l','VL.b#c1vl','H*#c1d[MOD:DISULFIDE]'],
-              ['VH.b#c2vh','L#c2l','VL.a#c2vl','H*#c2d[MOD:DISULFIDE]']],
+  {'chains': [['VH.a#c1vh','L#c1l[LENGTH:5]','VL.b#c1vl','H*#c1d[MOD:DISULFIDE]'],
+              ['VH.b#c2vh','L#c2l[LENGTH:5]','VL.a#c2vl','H*#c2d[MOD:DISULFIDE]']],
    'pairs': [('c1vh','c2vl',0), ('c2vh','c1vl',0), ('c1d','c2d',1)]})
 
 F('TandAb', 'Fragment bispecifics',
   'Two identical four-domain chains dimerise head-to-tail into a tetravalent bispecific.',
-  {'chains': [['VH.a#1vha','L#1l1','VL.b#1vlb','L#1l2','VH.b#1vhb','L#1l3','VL.a#1vla'],
-              ['VH.a#2vha','L#2l1','VL.b#2vlb','L#2l2','VH.b#2vhb','L#2l3','VL.a#2vla']],
+  {'chains': [['VH.a#1vha','L#1l1[LENGTH:5]','VL.b#1vlb','L#1l2[LENGTH:5]','VH.b#1vhb','L#1l3[LENGTH:5]','VL.a#1vla'],
+              ['VH.a#2vha','L#2l1[LENGTH:5]','VL.b#2vlb','L#2l2[LENGTH:5]','VH.b#2vhb','L#2l3[LENGTH:5]','VL.a#2vla']],
    'pairs': [('1vha','2vla',0), ('1vlb','2vhb',0), ('2vha','1vla',0), ('2vlb','1vhb',0)]})
 
 _a,_pa = scfv('x','a'); _b,_pb = scfv('y','b'); _c,_pc = scfv('z','c')
 F('Triplebody', 'Fragment bispecifics',
   'Three scFvs in a row on one chain, giving three specificities without an Fc.',
-  {'chains': [_a + ['L#m1'] + _b + ['L#m2'] + _c], 'pairs': _pa+_pb+_pc})
+  {'chains': [_a + ['L#m1[LENGTH:10]'] + _b + ['L#m2[LENGTH:10]'] + _c], 'pairs': _pa+_pb+_pc})
 
 # ---- Fc fusions ----------------------------------------------------------
 _a,_pa = scfv('x','a'); _b,_pb = scfv('y','a')
@@ -278,12 +281,12 @@ F('Bispecific VHH-Fc', 'Fc fusions',
 _a,_pa = scfv('x','a'); _b,_pb = scfv('y','b'); _c,_pc = scfv('z','a'); _d,_pd = scfv('w','b')
 F('Tandem scFv-Fc', 'Fc fusions',
   'Two tandem scFvs per chain on an Fc: tetravalent and bispecific, fully symmetric.',
-  {'chains': [_a+['L#m1']+_b+fc('p'), _c+['L#m2']+_d+fc('q')],
+  {'chains': [_a+['L#m1[LENGTH:10]']+_b+fc('p'), _c+['L#m2[LENGTH:10]']+_d+fc('q')],
    'pairs': _pa+_pb+_pc+_pd+fc_pairs('p','q')})
 
 F('Diabody-Fc', 'Fc fusions',
   'A diabody grafted onto an Fc, which restores long serum half-life.',
-  {'chains': [['VH.a#1vh','L#1l','VL.b#1vl']+fc('p'), ['VH.b#2vh','L#2l','VL.a#2vl']+fc('q')],
+  {'chains': [['VH.a#1vh','L#1l[LENGTH:5]','VL.b#1vl']+fc('p'), ['VH.b#2vh','L#2l[LENGTH:5]','VL.a#2vl']+fc('q')],
    'pairs': [('1vh','2vl',0), ('2vh','1vl',0)]+fc_pairs('p','q')})
 
 F('Receptor-Fc trap', 'Fc fusions',
@@ -301,12 +304,12 @@ F('Zipper-assembled bispecific', 'Fc fusions',
 _H1,_L1,_P1 = arm('p','a'); _H2,_L2,_P2 = arm('q','b'); _s,_sp = scfv('r','c')
 F('Trispecific IgG-scFv', 'Trispecific',
   'A knob-into-hole bispecific with a third specificity appended as an scFv on one chain.',
-  {'chains': [_H1+fc('p', ch3mods='>')+['L#rlk']+_s, _L1, _H2+fc('q', ch3mods='@'), _L2],
+  {'chains': [_H1+fc('p', ch3mods='>')+['L#rlk[LENGTH:15]']+_s, _L1, _H2+fc('q', ch3mods='@'), _L2],
    'pairs': _P1+_P2+fc_pairs('p','q')+_sp})
 
 F('Trispecific VHH-Fc', 'Trispecific',
   'Three VHH domains distributed across a knob-into-hole Fc.',
-  {'chains': [['VHH.a#pv','L#pl','VHH.b#pv2']+fc('p', ch3mods='>'),
+  {'chains': [['VHH.a#pv','L#pl[LENGTH:15]','VHH.b#pv2']+fc('p', ch3mods='>'),
               ['VHH.c#qv']+fc('q', ch3mods='@')], 'pairs': fc_pairs('p','q')})
 
 # ---- Receptors -----------------------------------------------------------

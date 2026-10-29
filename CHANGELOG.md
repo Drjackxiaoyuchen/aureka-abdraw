@@ -4,6 +4,33 @@ Notable changes to Aureka AbDraw. This project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html), and the format of this file
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.0] — 2026-10-29
+
+Drawing corrections from review by Mandy, who checked the output against how these molecules
+are actually built.
+
+### Changed
+
+- **Connectors are anchored at the chain termini.** A polypeptide now leaves a domain at its
+  C-terminus and enters the next at its N-terminus, instead of running centre to centre. The
+  linker in an scFv emerges below VH and arrives above VL, which is where it belongs.
+- **Linkers follow the backbone.** The curve leaves along the C-terminal direction and arrives
+  along the N-terminal one, so it never cuts across an antigen-binding end. Where the chain has
+  to double back on itself, the path routes around the outside of the molecule rather than
+  straight through it.
+- **Domains joined by a linker are spaced apart**, so the linker is visible instead of being
+  buried under two overlapping ellipses. Tandem VHH constructs were the worst case.
+- **Hinge disulfides sit closer together**, as a tight parallel pair.
+- **C-terminal fusions sit closer to the Fc**, which shortens the linker reaching them.
+
+### Added
+
+- **Every linker in the library declares its length**, and the drawn loop tightens or loosens
+  with it. The 5-residue linker that forces a diabody to cross-pair now looks different from
+  the 15-residue (G4S)3 of an scFv — which is most of what distinguishes those formats.
+- Linker length labels are on by default.
+- A short explanation of the Build tab and what `Renumber & auto-pair` is for.
+
 ## [1.0.0] — 2026-10-29
 
 First tagged release. Nothing was released before this, so the commits preceding it are

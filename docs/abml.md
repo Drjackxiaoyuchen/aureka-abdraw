@@ -173,3 +173,9 @@ linkers, red disulfides.
 
 Variable domains carry a notch at the antigen-binding end, and VHH sits on a flat base to mark it
 as unpaired, both following the paper.
+
+Connectors are anchored at the chain termini: a polypeptide leaves a domain at its C-terminus and
+enters the next at its N-terminus. Linkers follow that direction out and in, routing around the
+outside of the molecule where the chain doubles back, and domains separated by a linker are spaced
+so the connection is visible. A declared `[LENGTH:n]` tightens or loosens the drawn loop, which is
+what makes a 5-residue diabody linker look different from a 15-residue scFv linker.

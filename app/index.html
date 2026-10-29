@@ -135,7 +135,7 @@ table.ref tr:last-child td{border-bottom:0}
 
 <div class="app">
   <div class="bar">
-    <h1 class="brand">Aureka AbDraw<small>AbML → figure · v1.0.0</small></h1>
+    <h1 class="brand">Aureka AbDraw<small>AbML → figure · v1.1.0</small></h1>
     <span class="sp"></span>
     <button class="btn" id="bCopy">Copy AbML</button>
     <button class="btn" id="bCopySvg">Copy SVG</button>
@@ -162,6 +162,10 @@ table.ref tr:last-child td{border-bottom:0}
       </div>
 
       <div class="pane" id="pane-bld" role="tabpanel" aria-labelledby="tab-bld" hidden>
+        <p class="hint">Pick a domain type, give it a specificity, and add it to the end of a chain.
+        Build the chains in N&rarr;C order, then press <strong>Renumber &amp; auto-pair</strong> &mdash;
+        that allocates the identifiers and works out which domains face each other, so you never
+        write the numbering by hand.</p>
         <div class="grp">
           <h3>Add domain</h3>
           <div class="row">
@@ -192,7 +196,7 @@ table.ref tr:last-child td{border-bottom:0}
           <label class="ck"><input type="checkbox" id="oLabels" checked> Domain labels</label>
           <label class="ck"><input type="checkbox" id="oSpec"> Show specificity (VH<sub>a</sub>)</label>
           <label class="ck"><input type="checkbox" id="oHinge"> Label hinges</label>
-          <label class="ck"><input type="checkbox" id="oLink"> Label linkers</label>
+          <label class="ck"><input type="checkbox" id="oLink" checked> Label linker lengths</label>
           <label class="ck"><input type="checkbox" id="oIds"> Domain ID numbers</label>
           <label class="ck"><input type="checkbox" id="oNotes" checked> Comment list beside figure</label>
         </div>
@@ -322,7 +326,7 @@ table.ref tr:last-child td{border-bottom:0}
    ============================================================ */
 
 /* ---------- grammar tables ---------- */
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const DTYPES = ['VHH','CH1','CH2','CH3','CH4','CH5','VH','VL','CL','VA','VB','VG','VD','CA','CB','CG','CD','H','L','X','C'];
 const MODCH  = '*>@+_!^';
 const MODNAME = {'*':'general modification','>':'knob','@':'hole','+':'positive charge','_':'negative charge','!':'aglycosyl CH2','^':'ADC conjugation site'};
@@ -352,12 +356,12 @@ const COL_X = '#6C5ABA', COL_XL = '#CCC2FB', COL_C = '#F7DEB5';
 /* ---------- format library (authored in tools/build_formats.py) ---------- */
 const LIBRARY = [
  {n:"Fv",c:"Fragments",d:"The minimal antigen-binding unit: a VH\u2013VL heterodimer with no constant domains.",a:"VH.a(1:2)|VL.a(2:1)"},
- {n:"scFv",c:"Fragments",d:"VH and VL carried on one polypeptide and held together by a flexible linker.",a:"VH.a(1:3)-L(2)-VL.a(3:1)"},
+ {n:"scFv",c:"Fragments",d:"VH and VL carried on one polypeptide and held together by a flexible linker.",a:"VH.a(1:3)-L(2)[LENGTH:15]-VL.a(3:1)"},
  {n:"Fab",c:"Fragments",d:"Heavy-chain Fd (VH\u2013CH1) disulfide-bonded to a complete light chain.",a:"VH.a(1:3)-CH1(2:4){1}|VL.a(3:1)-CL(4:2){1}"},
  {n:"F(ab')2",c:"Fragments",d:"Two Fab arms held together by the hinge disulfides, with no Fc.",a:"VH.a(1:4)-CH1(2:5){1}-H(3:8){2}|VL.a(4:1)-CL(5:2){1}|VH.a(6:9)-CH1(7:10){1}-H(8:3){2}|VL.a(9:6)-CL(10:7){1}"},
  {n:"VHH (nanobody)",c:"Fragments",d:"A single camelid heavy-chain variable domain that binds without a light chain.",a:"VHH.a(1)"},
- {n:"Biparatopic VHH",c:"Fragments",d:"Two VHH domains in tandem, each raised against a different epitope on one target.",a:"VHH.a(1)-L(2)-VHH.b(3)"},
- {n:"Trivalent VHH",c:"Fragments",d:"Three linked VHH domains giving three binding specificities on one short chain.",a:"VHH.a(1)-L(2)-VHH.b(3)-L(4)-VHH.c(5)"},
+ {n:"Biparatopic VHH",c:"Fragments",d:"Two VHH domains in tandem, each raised against a different epitope on one target.",a:"VHH.a(1)-L(2)[LENGTH:15]-VHH.b(3)"},
+ {n:"Trivalent VHH",c:"Fragments",d:"Three linked VHH domains giving three binding specificities on one short chain.",a:"VHH.a(1)-L(2)[LENGTH:15]-VHH.b(3)-L(4)[LENGTH:15]-VHH.c(5)"},
  {n:"IgG1",c:"Canonical",d:"The parental monospecific, bivalent antibody that every format below modifies.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3(5:12)|VL.a(6:1)-CL(7:2){1}|VH.a(8:13)-CH1(9:14){1}-H(10:3){2}-CH2(11:4)-CH3(12:5)|VL.a(13:8)-CL(14:9){1}"},
  {n:"Fc",c:"Canonical",d:"The hinge\u2013CH2\u2013CH3 homodimer on its own, the effector and half-life module.",a:"H(1:4){2}-CH2(2:5)-CH3(3:6)|H(4:1){2}-CH2(5:2)-CH3(6:3)"},
  {n:"One-armed IgG",c:"Canonical",d:"Monovalent IgG: one Fab arm, a bare knob-into-hole Fc on the other side.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:8){2}-CH2(4:9)-CH3>(5:10)|VL.a(6:1)-CL(7:2){1}|H(8:3){2}-CH2(9:4)-CH3@(10:5)"},
@@ -370,28 +374,28 @@ const LIBRARY = [
  {n:"Charge-pair bispecific",c:"Asymmetric bispecific IgG",d:"Electrostatic steering: opposing charges at the CH3 and CH1/CL interfaces instead of knobs.",a:"VH.a(1:6)-CH1*+(2:7){1}-H(3:10){2}-CH2(4:11)-CH3*+(5:12)|VL.a(6:1)-CL*_(7:2){1}|VH.b(8:13)-CH1*_(9:14){1}-H(10:3){2}-CH2(11:4)-CH3*_(12:5)|VL.b(13:8)-CL*+(14:9){1}"},
  {n:"DuetMab",c:"Asymmetric bispecific IgG",d:"Knob-into-hole plus an engineered CH1\u2013CL disulfide replacing the native one in one arm.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3>(5:12)|VL.a(6:1)-CL(7:2){1}|VH.b(8:13)-CH1*(9:14){1}[MOD:DISULFIDE]-H(10:3){2}-CH2(11:4)-CH3@(12:5)|VL.b(13:8)-CL*(14:9){1}[MOD:DISULFIDE]"},
  {n:"kappa-lambda body",c:"Asymmetric bispecific IgG",d:"One common heavy chain pairs with a kappa and a lambda light chain, giving two specificities.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3(5:12)|VL.a(6:1)-CL(7:2){1}[NOTE:kappa]|VH.a(8:13)-CH1(9:14){1}-H(10:3){2}-CH2(11:4)-CH3(12:5)|VL.b(13:8)-CL(14:9){1}[NOTE:lambda]"},
- {n:"DVD-Ig",c:"Appended IgG",d:"A second variable domain stacked N-terminal to each native one: tetravalent and bispecific.",a:"VH.b(1:8)-L(2)-VH.a(3:10)-CH1(4:11){1}-H(5:16){2}-CH2(6:17)-CH3(7:18)|VL.b(8:1)-L(9)-VL.a(10:3)-CL(11:4){1}|VH.b(12:19)-L(13)-VH.a(14:21)-CH1(15:22){1}-H(16:5){2}-CH2(17:6)-CH3(18:7)|VL.b(19:12)-L(20)-VL.a(21:14)-CL(22:15){1}"},
- {n:"IgG-scFv (heavy C-term)",c:"Appended IgG",d:"An scFv fused to each heavy-chain C-terminus \u2014 tetravalent, bispecific, symmetric.",a:"VH.a(1:10)-CH1(2:11){1}-H(3:14){2}-CH2(4:15)-CH3(5:16)-L(6)-VH.b(7:9)-L(8)-VL.b(9:7)|VL.a(10:1)-CL(11:2){1}|VH.a(12:21)-CH1(13:22){1}-H(14:3){2}-CH2(15:4)-CH3(16:5)-L(17)-VH.b(18:20)-L(19)-VL.b(20:18)|VL.a(21:12)-CL(22:13){1}"},
- {n:"IgG-scFv (light C-term)",c:"Appended IgG",d:"The same idea with the scFv hung off each light-chain C-terminus instead.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:14){2}-CH2(4:15)-CH3(5:16)|VL.a(6:1)-CL(7:2){1}-L(8)-VH.b(9:11)-L(10)-VL.b(11:9)|VH.a(12:17)-CH1(13:18){1}-H(14:3){2}-CH2(15:4)-CH3(16:5)|VL.a(17:12)-CL(18:13){1}-L(19)-VH.b(20:22)-L(21)-VL.b(22:20)"},
- {n:"scFv-IgG (heavy N-term)",c:"Appended IgG",d:"An scFv placed ahead of each VH, so the second specificity sits at the tip of the arm.",a:"VH.b(1:3)-L(2)-VL.b(3:1)-L(4)-VH.a(5:10)-CH1(6:11){1}-H(7:18){2}-CH2(8:19)-CH3(9:20)|VL.a(10:5)-CL(11:6){1}|VH.b(12:14)-L(13)-VL.b(14:12)-L(15)-VH.a(16:21)-CH1(17:22){1}-H(18:7){2}-CH2(19:8)-CH3(20:9)|VL.a(21:16)-CL(22:17){1}"},
- {n:"IgG-VHH",c:"Appended IgG",d:"A single VHH domain on each heavy-chain C-terminus \u2014 the smallest symmetric append.",a:"VH.a(1:8)-CH1(2:9){1}-H(3:12){2}-CH2(4:13)-CH3(5:14)-L(6)-VHH.b(7)|VL.a(8:1)-CL(9:2){1}|VH.a(10:17)-CH1(11:18){1}-H(12:3){2}-CH2(13:4)-CH3(14:5)-L(15)-VHH.b(16)|VL.a(17:10)-CL(18:11){1}"},
+ {n:"DVD-Ig",c:"Appended IgG",d:"A second variable domain stacked N-terminal to each native one: tetravalent and bispecific.",a:"VH.b(1:8)-L(2)[LENGTH:6]-VH.a(3:10)-CH1(4:11){1}-H(5:16){2}-CH2(6:17)-CH3(7:18)|VL.b(8:1)-L(9)[LENGTH:6]-VL.a(10:3)-CL(11:4){1}|VH.b(12:19)-L(13)[LENGTH:6]-VH.a(14:21)-CH1(15:22){1}-H(16:5){2}-CH2(17:6)-CH3(18:7)|VL.b(19:12)-L(20)[LENGTH:6]-VL.a(21:14)-CL(22:15){1}"},
+ {n:"IgG-scFv (heavy C-term)",c:"Appended IgG",d:"An scFv fused to each heavy-chain C-terminus \u2014 tetravalent, bispecific, symmetric.",a:"VH.a(1:10)-CH1(2:11){1}-H(3:14){2}-CH2(4:15)-CH3(5:16)-L(6)[LENGTH:15]-VH.b(7:9)-L(8)[LENGTH:15]-VL.b(9:7)|VL.a(10:1)-CL(11:2){1}|VH.a(12:21)-CH1(13:22){1}-H(14:3){2}-CH2(15:4)-CH3(16:5)-L(17)[LENGTH:15]-VH.b(18:20)-L(19)[LENGTH:15]-VL.b(20:18)|VL.a(21:12)-CL(22:13){1}"},
+ {n:"IgG-scFv (light C-term)",c:"Appended IgG",d:"The same idea with the scFv hung off each light-chain C-terminus instead.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:14){2}-CH2(4:15)-CH3(5:16)|VL.a(6:1)-CL(7:2){1}-L(8)[LENGTH:15]-VH.b(9:11)-L(10)[LENGTH:15]-VL.b(11:9)|VH.a(12:17)-CH1(13:18){1}-H(14:3){2}-CH2(15:4)-CH3(16:5)|VL.a(17:12)-CL(18:13){1}-L(19)[LENGTH:15]-VH.b(20:22)-L(21)[LENGTH:15]-VL.b(22:20)"},
+ {n:"scFv-IgG (heavy N-term)",c:"Appended IgG",d:"An scFv placed ahead of each VH, so the second specificity sits at the tip of the arm.",a:"VH.b(1:3)-L(2)[LENGTH:15]-VL.b(3:1)-L(4)[LENGTH:15]-VH.a(5:10)-CH1(6:11){1}-H(7:18){2}-CH2(8:19)-CH3(9:20)|VL.a(10:5)-CL(11:6){1}|VH.b(12:14)-L(13)[LENGTH:15]-VL.b(14:12)-L(15)[LENGTH:15]-VH.a(16:21)-CH1(17:22){1}-H(18:7){2}-CH2(19:8)-CH3(20:9)|VL.a(21:16)-CL(22:17){1}"},
+ {n:"IgG-VHH",c:"Appended IgG",d:"A single VHH domain on each heavy-chain C-terminus \u2014 the smallest symmetric append.",a:"VH.a(1:8)-CH1(2:9){1}-H(3:12){2}-CH2(4:13)-CH3(5:14)-L(6)[LENGTH:15]-VHH.b(7)|VL.a(8:1)-CL(9:2){1}|VH.a(10:17)-CH1(11:18){1}-H(12:3){2}-CH2(13:4)-CH3(14:5)-L(15)[LENGTH:15]-VHH.b(16)|VL.a(17:10)-CL(18:11){1}"},
  {n:"Two-in-one Fab (DAF)",c:"Appended IgG",d:"One paratope engineered to bind two antigens, so the molecule stays a plain IgG.",a:"VH.ab(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3(5:12)|VL.ab(6:1)-CL(7:2){1}|VH.ab(8:13)-CH1(9:14){1}-H(10:3){2}-CH2(11:4)-CH3(12:5)|VL.ab(13:8)-CL(14:9){1}"},
  {n:"ADC (site-specific)",c:"Appended IgG",d:"An IgG carrying defined conjugation sites for a cytotoxic payload.",a:"VH.a(1:6)-CH1^(2:7){1}[MOD:CONJUGATION]-H(3:10){2}-CH2(4:11)-CH3(5:12)|VL.a(6:1)-CL(7:2){1}|VH.a(8:13)-CH1^(9:14){1}[MOD:CONJUGATION]-H(10:3){2}-CH2(11:4)-CH3(12:5)|VL.a(13:8)-CL(14:9){1}"},
- {n:"BiTE (tandem scFv)",c:"Fragment bispecifics",d:"Two scFvs in tandem on one chain \u2014 the T-cell engager archetype, no Fc at all.",a:"VH.a(1:3)-L(2)-VL.a(3:1)-L(4)-VH.b(5:7)-L(6)-VL.b(7:5)"},
- {n:"Diabody",c:"Fragment bispecifics",d:"Linkers too short to fold back, so two chains cross-pair into a compact bivalent dimer.",a:"VH.a(1:6)-L(2)-VL.b(3:4)|VH.b(4:3)-L(5)-VL.a(6:1)"},
- {n:"scDiabody",c:"Fragment bispecifics",d:"The diabody folded onto a single chain by adding a third, longer middle linker.",a:"VH.a(1:7)-L(2)-VL.b(3:5)-L(4)-VH.b(5:3)-L(6)-VL.a(7:1)"},
- {n:"DART",c:"Fragment bispecifics",d:"A diabody locked by an added C-terminal interchain disulfide for stability.",a:"VH.a(1:7)-L(2)-VL.b(3:5)-H*(4:8){1}[MOD:DISULFIDE]|VH.b(5:3)-L(6)-VL.a(7:1)-H*(8:4){1}[MOD:DISULFIDE]"},
- {n:"TandAb",c:"Fragment bispecifics",d:"Two identical four-domain chains dimerise head-to-tail into a tetravalent bispecific.",a:"VH.a(1:14)-L(2)-VL.b(3:12)-L(4)-VH.b(5:10)-L(6)-VL.a(7:8)|VH.a(8:7)-L(9)-VL.b(10:5)-L(11)-VH.b(12:3)-L(13)-VL.a(14:1)"},
- {n:"Triplebody",c:"Fragment bispecifics",d:"Three scFvs in a row on one chain, giving three specificities without an Fc.",a:"VH.a(1:3)-L(2)-VL.a(3:1)-L(4)-VH.b(5:7)-L(6)-VL.b(7:5)-L(8)-VH.c(9:11)-L(10)-VL.c(11:9)"},
- {n:"scFv-Fc",c:"Fc fusions",d:"An scFv on each side of an Fc: bivalent, monospecific, roughly half the mass of an IgG.",a:"VH.a(1:3)-L(2)-VL.a(3:1)-H(4:10){2}-CH2(5:11)-CH3(6:12)|VH.a(7:9)-L(8)-VL.a(9:7)-H(10:4){2}-CH2(11:5)-CH3(12:6)"},
+ {n:"BiTE (tandem scFv)",c:"Fragment bispecifics",d:"Two scFvs in tandem on one chain \u2014 the T-cell engager archetype, no Fc at all.",a:"VH.a(1:3)-L(2)[LENGTH:15]-VL.a(3:1)-L(4)[LENGTH:5]-VH.b(5:7)-L(6)[LENGTH:15]-VL.b(7:5)"},
+ {n:"Diabody",c:"Fragment bispecifics",d:"A 5-residue linker is too short for VH to fold back onto its own VL, so two chains cross-pair.",a:"VH.a(1:6)-L(2)[LENGTH:5]-VL.b(3:4)|VH.b(4:3)-L(5)[LENGTH:5]-VL.a(6:1)"},
+ {n:"scDiabody",c:"Fragment bispecifics",d:"The diabody folded onto a single chain by adding a third, longer middle linker.",a:"VH.a(1:7)-L(2)[LENGTH:5]-VL.b(3:5)-L(4)[LENGTH:15]-VH.b(5:3)-L(6)[LENGTH:5]-VL.a(7:1)"},
+ {n:"DART",c:"Fragment bispecifics",d:"A diabody locked by an added C-terminal interchain disulfide for stability.",a:"VH.a(1:7)-L(2)[LENGTH:5]-VL.b(3:5)-H*(4:8){1}[MOD:DISULFIDE]|VH.b(5:3)-L(6)[LENGTH:5]-VL.a(7:1)-H*(8:4){1}[MOD:DISULFIDE]"},
+ {n:"TandAb",c:"Fragment bispecifics",d:"Two identical four-domain chains dimerise head-to-tail into a tetravalent bispecific.",a:"VH.a(1:14)-L(2)[LENGTH:5]-VL.b(3:12)-L(4)[LENGTH:5]-VH.b(5:10)-L(6)[LENGTH:5]-VL.a(7:8)|VH.a(8:7)-L(9)[LENGTH:5]-VL.b(10:5)-L(11)[LENGTH:5]-VH.b(12:3)-L(13)[LENGTH:5]-VL.a(14:1)"},
+ {n:"Triplebody",c:"Fragment bispecifics",d:"Three scFvs in a row on one chain, giving three specificities without an Fc.",a:"VH.a(1:3)-L(2)[LENGTH:15]-VL.a(3:1)-L(4)[LENGTH:10]-VH.b(5:7)-L(6)[LENGTH:15]-VL.b(7:5)-L(8)[LENGTH:10]-VH.c(9:11)-L(10)[LENGTH:15]-VL.c(11:9)"},
+ {n:"scFv-Fc",c:"Fc fusions",d:"An scFv on each side of an Fc: bivalent, monospecific, roughly half the mass of an IgG.",a:"VH.a(1:3)-L(2)[LENGTH:15]-VL.a(3:1)-H(4:10){2}-CH2(5:11)-CH3(6:12)|VH.a(7:9)-L(8)[LENGTH:15]-VL.a(9:7)-H(10:4){2}-CH2(11:5)-CH3(12:6)"},
  {n:"VHH-Fc (HCAb)",c:"Fc fusions",d:"Camelid-style heavy-chain-only antibody: one VHH per chain, straight onto the hinge.",a:"VHH.a(1)-H(2:6){2}-CH2(3:7)-CH3(4:8)|VHH.a(5)-H(6:2){2}-CH2(7:3)-CH3(8:4)"},
  {n:"Bispecific VHH-Fc",c:"Fc fusions",d:"Two different VHH domains on a knob-into-hole Fc \u2014 the compact asymmetric bispecific.",a:"VHH.a(1)-H(2:6){2}-CH2(3:7)-CH3>(4:8)|VHH.b(5)-H(6:2){2}-CH2(7:3)-CH3@(8:4)"},
- {n:"Tandem scFv-Fc",c:"Fc fusions",d:"Two tandem scFvs per chain on an Fc: tetravalent and bispecific, fully symmetric.",a:"VH.a(1:3)-L(2)-VL.a(3:1)-L(4)-VH.b(5:7)-L(6)-VL.b(7:5)-H(8:18){2}-CH2(9:19)-CH3(10:20)|VH.a(11:13)-L(12)-VL.a(13:11)-L(14)-VH.b(15:17)-L(16)-VL.b(17:15)-H(18:8){2}-CH2(19:9)-CH3(20:10)"},
- {n:"Diabody-Fc",c:"Fc fusions",d:"A diabody grafted onto an Fc, which restores long serum half-life.",a:"VH.a(1:9)-L(2)-VL.b(3:7)-H(4:10){2}-CH2(5:11)-CH3(6:12)|VH.b(7:3)-L(8)-VL.a(9:1)-H(10:4){2}-CH2(11:5)-CH3(12:6)"},
+ {n:"Tandem scFv-Fc",c:"Fc fusions",d:"Two tandem scFvs per chain on an Fc: tetravalent and bispecific, fully symmetric.",a:"VH.a(1:3)-L(2)[LENGTH:15]-VL.a(3:1)-L(4)[LENGTH:10]-VH.b(5:7)-L(6)[LENGTH:15]-VL.b(7:5)-H(8:18){2}-CH2(9:19)-CH3(10:20)|VH.a(11:13)-L(12)[LENGTH:15]-VL.a(13:11)-L(14)[LENGTH:10]-VH.b(15:17)-L(16)[LENGTH:15]-VL.b(17:15)-H(18:8){2}-CH2(19:9)-CH3(20:10)"},
+ {n:"Diabody-Fc",c:"Fc fusions",d:"A diabody grafted onto an Fc, which restores long serum half-life.",a:"VH.a(1:9)-L(2)[LENGTH:5]-VL.b(3:7)-H(4:10){2}-CH2(5:11)-CH3(6:12)|VH.b(7:3)-L(8)[LENGTH:5]-VL.a(9:1)-H(10:4){2}-CH2(11:5)-CH3(12:6)"},
  {n:"Receptor-Fc trap",c:"Fc fusions",d:"A soluble receptor ectodomain on an Fc, used to soak up a ligand.",a:"X(1)[TYPE:FUSION,NOTE:receptor ectodomain]-H(2:6){2}-CH2(3:7)-CH3(4:8)|X(5)[TYPE:FUSION,NOTE:receptor ectodomain]-H(6:2){2}-CH2(7:3)-CH3(8:4)"},
  {n:"Zipper-assembled bispecific",c:"Fc fusions",d:"A leucine zipper on each C-terminus forces the two different half-antibodies together.",a:"VH.a(1:7)-CH1(2:8){1}-H(3:11){2}-CH2(4:12)-CH3(5:13)-X(6:14)[TYPE:ZIPPER]|VL.a(7:1)-CL(8:2){1}|VH.b(9:15)-CH1(10:16){1}-H(11:3){2}-CH2(12:4)-CH3(13:5)-X(14:6)[TYPE:ZIPPER]|VL.b(15:9)-CL(16:10){1}"},
- {n:"Trispecific IgG-scFv",c:"Trispecific",d:"A knob-into-hole bispecific with a third specificity appended as an scFv on one chain.",a:"VH.a(1:10)-CH1(2:11){1}-H(3:14){2}-CH2(4:15)-CH3>(5:16)-L(6)-VH.c(7:9)-L(8)-VL.c(9:7)|VL.a(10:1)-CL(11:2){1}|VH.b(12:17)-CH1(13:18){1}-H(14:3){2}-CH2(15:4)-CH3@(16:5)|VL.b(17:12)-CL(18:13){1}"},
- {n:"Trispecific VHH-Fc",c:"Trispecific",d:"Three VHH domains distributed across a knob-into-hole Fc.",a:"VHH.a(1)-L(2)-VHH.b(3)-H(4:8){2}-CH2(5:9)-CH3>(6:10)|VHH.c(7)-H(8:4){2}-CH2(9:5)-CH3@(10:6)"},
+ {n:"Trispecific IgG-scFv",c:"Trispecific",d:"A knob-into-hole bispecific with a third specificity appended as an scFv on one chain.",a:"VH.a(1:10)-CH1(2:11){1}-H(3:14){2}-CH2(4:15)-CH3>(5:16)-L(6)[LENGTH:15]-VH.c(7:9)-L(8)[LENGTH:15]-VL.c(9:7)|VL.a(10:1)-CL(11:2){1}|VH.b(12:17)-CH1(13:18){1}-H(14:3){2}-CH2(15:4)-CH3@(16:5)|VL.b(17:12)-CL(18:13){1}"},
+ {n:"Trispecific VHH-Fc",c:"Trispecific",d:"Three VHH domains distributed across a knob-into-hole Fc.",a:"VHH.a(1)-L(2)[LENGTH:15]-VHH.b(3)-H(4:8){2}-CH2(5:9)-CH3>(6:10)|VHH.c(7)-H(8:4){2}-CH2(9:5)-CH3@(10:6)"},
  {n:"TCR alpha-beta",c:"Receptors",d:"The alpha/beta T-cell receptor ectodomain pair.",a:"VA(1:3)-CA(2:4){1}|VB(3:1)-CB(4:2){1}"},
  {n:"TCR gamma-delta",c:"Receptors",d:"The gamma/delta T-cell receptor ectodomain pair.",a:"VG(1:3)-CG(2:4){1}|VD(3:1)-CD(4:2){1}"},
 ].map(x => ({name:x.n, category:x.c, description:x.d, abml:x.a}));
@@ -508,7 +512,7 @@ function writeAbML(chains){
 /* ============================================================
    Layout — assign every non-connector domain an (x, y, rotation)
    ============================================================ */
-const GEO = {rx:13, ry:18, step:32, slot:26, armStart:34, stemTop:34};
+const GEO = {rx:13, ry:18, step:32, slot:26, armStart:34, stemTop:34, linkGap:21};
 
 function findCore(chains){
   const flat = chains.flat();
@@ -523,6 +527,14 @@ function findCore(chains){
   for(const T of ['CH2','CH3','CH4']) for(const d of flat) if(d.type===T)
     for(const p of d.pd) if(p.type===T && p.ci!==d.ci) return {kind:'fc', a:d, b:p};
   return null;
+}
+
+/* true when a linker separates two domains that end up adjacent in a column */
+function linkedPair(chain, d1, d2){
+  if(!d1 || !d2 || d1.ci !== d2.ci) return false;
+  const i = chain.indexOf(d1), j = chain.indexOf(d2);
+  if(i < 0 || j < 0) return false;
+  return chain.slice(Math.min(i,j)+1, Math.max(i,j)).some(x => x.type === 'L');
 }
 
 function layout(parsed, opt){
@@ -571,15 +583,17 @@ function layout(parsed, opt){
       const tail = stems[side].slice(kB);
       if(!tail.length) return;
       const baseX = (side === 0 ? -1 : 1) * GEO.slot * 1.55;
-      let y = GEO.stemTop + kB*GEO.step + (kB ? GEO.step*0.75 : 0);
+      let y = GEO.stemTop + kB*GEO.step + (kB ? GEO.step*0.42 : 0);
+      let prevT = null;
       tail.forEach(d => {
         if(placed.has(d)) return;
+        if(prevT && linkedPair(chains[d.ci], prevT, d)) y += GEO.linkGap;
         const mate = d.pd.find(p => p !== d && !placed.has(p));
         if(mate){
           put(d,    baseX - GEO.slot/2, y, 0, +GEO.rx, 0);
           put(mate, baseX + GEO.slot/2, y, 0, -GEO.rx, 1);
         } else put(d, baseX, y, 0, +GEO.rx, 0);
-        y += GEO.step;
+        prevT = mate || d; y += GEO.step;
       });
     });
 
@@ -647,10 +661,10 @@ function layout(parsed, opt){
     groups.forEach(g => {
       const primary = g[0], second = g[1] || [];
       const seen = new Set();
-      let k = 0;
+      let y = originY, prev = null;
       primary.forEach(d => {
         if(placed.has(d)) return;
-        const y = originY + k*GEO.step;
+        if(prev && linkedPair(chains[d.ci], prev, d)) y += GEO.linkGap;
         const mate = d.pd.find(p => p !== d && !placed.has(p) && (second.includes(p) || p.ci === d.ci));
         if(mate){
           put(d,    originX - GEO.slot/2, y, 0, +GEO.rx, 0);
@@ -658,10 +672,14 @@ function layout(parsed, opt){
         } else {
           put(d, originX, y, 0, +GEO.rx, 0);
         }
-        seen.add(d); k++;
+        seen.add(d); prev = mate || d; y += GEO.step;
       });
       /* any domain in this group still unplaced goes below, single file */
-      g.flat().forEach(d => { if(!placed.has(d)){ put(d, originX, originY + k*GEO.step, 0, +GEO.rx, 0); k++; } });
+      g.flat().forEach(d => {
+        if(placed.has(d)) return;
+        if(prev && linkedPair(chains[d.ci], prev, d)) y += GEO.linkGap;
+        put(d, originX, y, 0, +GEO.rx, 0); prev = d; y += GEO.step;
+      });
       originX += GEO.slot*3.2;
     });
   }
@@ -799,6 +817,10 @@ function buildFigure(abml, opt){
       d._paratope = Math.atan2(wx*Math.sin(r) + wy*Math.cos(r), wx*Math.cos(r) - wy*Math.sin(r));
     }
     d._outline = domainOutline(d);
+    /* chain termini: the domain's long axis runs N (local -y) to C (local +y) */
+    const th = (d._r || 0) * Math.PI/180, sn = Math.sin(th), cs = Math.cos(th);
+    d._nEnd = {x: d._x + GEO.ry*sn,  y: d._y - GEO.ry*cs};
+    d._cEnd = {x: d._x - GEO.ry*sn,  y: d._y + GEO.ry*cs};
   });
 
   let under = '', over = '', marks = '';
@@ -814,31 +836,39 @@ function buildFigure(abml, opt){
       return;
     }
     const {a,b} = c;
+    /* a polypeptide leaves one domain at its C-terminus and enters the next at its
+       N-terminus, so both connector kinds are anchored there rather than centre to centre */
+    const A = a._cEnd, B = b._nEnd;
     if(c.kind === 'linker'){
-      const dx = b._x-a._x, dy = b._y-a._y, dist = Math.hypot(dx,dy) || 1;
-      let nx = -dy/dist, ny = dx/dist;
-      const mx = (a._x+b._x)/2, my = (a._y+b._y)/2;
-      const tight = dist < GEO.step*1.35;           // neighbouring domains: needs a visible loop
-      const k = tight ? GEO.ry*2.05 : Math.min(22, dist*0.42);
-      /* put the loop on whichever side is clear; fall back to the middle of the molecule */
-      const crowd = (sx, sy) => L.nodes.reduce((n, nd) =>
-        n + (nd !== a && nd !== b && Math.hypot(nd._x-sx, nd._y-sy) < GEO.step*1.1 ? 1 : 0), 0);
-      const cA = crowd(mx + nx*k*0.78, my + ny*k*0.78);
-      const cB = crowd(mx - nx*k*0.78, my - ny*k*0.78);
-      if(cA > cB){ nx = -nx; ny = -ny; }
-      else if(cA === cB){
-        let tx = cx0 - mx, ty = cy0 - my;
-        if(Math.hypot(tx,ty) < 1){ tx = 0; ty = 1; }
-        if(nx*tx + ny*ty < 0){ nx = -nx; ny = -ny; }
+      /* leave along the C-terminal direction and arrive along the N-terminal one, so the
+         path reads as backbone and never cuts across an antigen-binding end */
+      const dist = Math.hypot(B.x-A.x, B.y-A.y) || 1;
+      const outA = {x: (A.x-a._x)/GEO.ry, y: (A.y-a._y)/GEO.ry};
+      const outB = {x: (B.x-b._x)/GEO.ry, y: (B.y-b._y)/GEO.ry};
+      const lenC = c.d.comments.find(k2 => k2.key === 'LENGTH');
+      const aa = lenC ? parseFloat(lenC.val) : NaN;
+      const slack = isNaN(aa) ? 1 : Math.max(0.68, Math.min(1.45, 0.60 + aa/24));
+      let h = Math.max(13, Math.min(27, dist*0.55)) * slack;
+      /* when the C-terminus points away from the next domain the chain has to double back;
+         route that around the outside instead of straight through the molecule */
+      const toB = {x: (B.x-A.x)/dist, y: (B.y-A.y)/dist};
+      const align = outA.x*toB.x + outA.y*toB.y;
+      let sx = 0, sy = 0;
+      if(align < 0.1){
+        h *= 0.5;
+        let px = -toB.y, py = toB.x;
+        const ox = (A.x+B.x)/2 - cx0, oy = (A.y+B.y)/2 - cy0;
+        if(px*ox + py*oy < 0){ px = -px; py = -py; }       // bow away from the core
+        sx = px * h * 1.7; sy = py * h * 1.7;
       }
       const col = opt.paperColours ? '#6A1B9A' : ink;
-      under += `<path d="M ${f2(a._x)} ${f2(a._y)} C ${f2(a._x+nx*k)} ${f2(a._y+ny*k)} ${f2(b._x+nx*k)} ${f2(b._y+ny*k)} ${f2(b._x)} ${f2(b._y)}" fill="none" stroke="${col}" stroke-width="${lw}" stroke-linecap="round"/>`;
-      if(opt.linkLabel){
-        const len = c.d.comments.find(k2 => k2.key === 'LENGTH');
-        marks += `<text x="${f2(mx+nx*k*0.80)}" y="${f2(my+ny*k*0.80+3)}" font-size="8" font-family="${FIGFONT}" fill="${ink}" text-anchor="middle">L${len ? ' '+len.val : ''}</text>`;
+      under += `<path d="M ${f2(A.x)} ${f2(A.y)} C ${f2(A.x+outA.x*h+sx)} ${f2(A.y+outA.y*h+sy)} ${f2(B.x+outB.x*h+sx)} ${f2(B.y+outB.y*h+sy)} ${f2(B.x)} ${f2(B.y)}" fill="none" stroke="${col}" stroke-width="${lw}" stroke-linecap="round"/>`;
+      if(opt.linkLabel && lenC){
+        const lx = (A.x+B.x)/2 + (outA.x+outB.x)*h*0.42 + sx*0.7, ly = (A.y+B.y)/2 + (outA.y+outB.y)*h*0.42 + sy*0.7;
+        marks += `<text x="${f2(lx)}" y="${f2(ly+3)}" font-size="7.5" font-family="${FIGFONT}" fill="${ink}" text-anchor="middle">${esc(lenC.val)}</text>`;
       }
     } else {
-      under += `<line x1="${f2(a._x)}" y1="${f2(a._y)}" x2="${f2(b._x)}" y2="${f2(b._y)}" stroke="${ink}" stroke-width="${lw}" stroke-linecap="round"${opt.arrows?' marker-end="url(#ncArrow)"':''}/>`;
+      under += `<line x1="${f2(A.x)}" y1="${f2(A.y)}" x2="${f2(B.x)}" y2="${f2(B.y)}" stroke="${ink}" stroke-width="${lw}" stroke-linecap="round"${opt.arrows?' marker-end="url(#ncArrow)"':''}/>`;
     }
   });
 
@@ -851,7 +881,7 @@ function buildFigure(abml, opt){
       const n = Math.min(bd.n, 4);
       const at = (e, t) => ({x: e.from.x + (e.to.x - e.from.x)*t, y: e.from.y + (e.to.y - e.from.y)*t});
       for(let i=0; i<n; i++){
-        const t = 0.40 + i*(0.34/Math.max(1, n-1 || 1));
+        const t = 0.47 + i*(0.15/Math.max(1, n-1 || 1));
         const l = at(bd.left, t), r = at(bd.right, t);
         under += `<line x1="${f2(l.x)}" y1="${f2(l.y)}" x2="${f2(r.x)}" y2="${f2(r.y)}" stroke="#D11A1A" stroke-width="${f2(lw*1.05)}" stroke-linecap="round"/>`;
       }

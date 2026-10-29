@@ -185,7 +185,7 @@ The AbML notation is from:
 
 > Sweet-Jones J, Ahmad M, Martin ACR. *Antibody markup language (AbML) — a notation language for
 > antibody-based drug formats and software for creating and rendering AbML (abYdraw).*
-> **mAbs** 14:1 (2022). doi:[10.1080/19420862.2022.2101183](https://doi.org/10.1080/19420862.2022.2101183)
+> **mAbs** 14:1 (2022). doi:[10.1080/19420862.2022.2101183](https://doi.org/10.1080/19420862.2022.2101183) · open access at [PMC9291709](https://pmc.ncbi.nlm.nih.gov/articles/PMC9291709/)
 
 Please cite that paper if you use AbDraw in published work.
 

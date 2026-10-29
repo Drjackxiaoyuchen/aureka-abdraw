@@ -68,8 +68,8 @@
  {
   "name": "Common light chain",
   "category": "Asymmetric bispecific IgG",
-  "description": "Both arms share one light chain, so only heavy-chain pairing has to be engineered.",
-  "abml": "VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3>(5:12)|VL.a(6:1)-CL(7:2){1}|VH.b(8:13)-CH1(9:14){1}-H(10:3){2}-CH2(11:4)-CH3@(12:5)|VL.a(13:8)-CL(14:9){1}"
+  "description": "Both arms share one light chain, so only heavy-chain pairing has to be engineered. The shared chain carries both specificities, per the AbML convention.",
+  "abml": "VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3>(5:12)|VL.ab(6:1)-CL(7:2){1}|VH.b(8:13)-CH1(9:14){1}-H(10:3){2}-CH2(11:4)-CH3@(12:5)|VL.ab(13:8)-CL(14:9){1}"
  },
  {
   "name": "CrossMab CH1-CL",

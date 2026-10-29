@@ -4,7 +4,7 @@ AbDraw implements **AbML**, an antibody markup notation published in:
 
 > Sweet-Jones J, Ahmad M, Martin ACR. *Antibody markup language (AbML) — a notation
 > language for antibody-based drug formats and software for creating and rendering
-> AbML (abYdraw).* mAbs 14:1 (2022). doi:[10.1080/19420862.2022.2101183](https://doi.org/10.1080/19420862.2022.2101183)
+> AbML (abYdraw).* mAbs 14:1 (2022). doi:[10.1080/19420862.2022.2101183](https://doi.org/10.1080/19420862.2022.2101183) · open access at [PMC9291709](https://pmc.ncbi.nlm.nih.gov/articles/PMC9291709/)
 
 The reference implementation of that notation, [abYdraw](https://github.com/JamesSweetJones/abYdraw),
 is a Python/Tkinter application licensed GPL-3.0.

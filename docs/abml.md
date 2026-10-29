@@ -100,6 +100,7 @@ countersunk notch, so a knob-into-hole Fc is legible without labels.
 | Keyword | Use |
 |---|---|
 | `ANTI` | the antigen, free text |
+| `ASEQ` / `DSEQ` | amino-acid or DNA sequence; parsed and carried, not drawn |
 | `MOD` | what a `*` modification is, from a controlled list |
 | `TYPE` | what an `X` or `C` domain is (`ZIPPER`, `FUSION`, `OTHER`, crosslinker names) |
 | `LENGTH` | length of a linker |
@@ -114,6 +115,27 @@ VL*.a(1:3)[ANTI:CD3][MOD:PI]
 ```
 
 Comments appear in a list beside the figure when **Comment list** is on.
+
+### Nonspecific conjugation — `|[ADC]`
+
+A trailing pseudo-chain consisting only of `[ADC]` marks nonspecific conjugation across the
+molecule, as distinct from the `^` symbol, which marks one defined site:
+
+```
+VH.a(1:2)-CH1-H-CH2-CH3 | VL.a(2:1)-CL | [ADC]
+```
+
+AbDraw notes it beside the figure rather than drawing a payload.
+
+## Rules the parser enforces
+
+- A domain cannot carry both `>` and `@`, nor both `+` and `_`.
+- `!` is only meaningful on CH2.
+- When a molecule has more than one chain, every chain must interact with at least one other.
+- A light chain shared between two arms carries **both** specificities. Heavy chains `VH.a` and
+  `VH.b` pair with a common `VL.ab`, not with two separate `VL.a` chains.
+
+Violations surface under the editor; they do not stop the figure drawing.
 
 ## A complete example
 
@@ -139,3 +161,15 @@ not change, which is precisely why the notation is useful for this family.
   of scope.
 - It does not reverse-engineer AbML from a drawing. Build chains in the **Build** tab
   instead, which writes the expression for you.
+- `ASEQ` and `DSEQ` are accepted and preserved but never rendered.
+
+## Drawing conventions
+
+AbDraw departs from the reference implementation in two deliberate ways. Domains are drawn as
+ellipses rather than slanted blocks, which matches the convention used in most bispecific review
+figures; and connectors are black by default, per the Aureka figure guide. The **Paper connector
+colours** switch in the Style tab restores the published scheme — dark green hinges, purple
+linkers, red disulfides.
+
+Variable domains carry a notch at the antigen-binding end, and VHH sits on a flat base to mark it
+as unpaired, both following the paper.

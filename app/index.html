@@ -200,6 +200,7 @@ table.ref tr:last-child td{border-bottom:0}
           <h3>Bonds</h3>
           <label class="ck"><input type="checkbox" id="oSS" checked> Disulfide bonds</label>
           <label class="ck"><input type="checkbox" id="oArrow"> N→C direction arrows</label>
+          <label class="ck"><input type="checkbox" id="oPaper"> Paper connector colours</label>
           <div class="row"><label for="oLw">Line weight</label><span id="oLwV" style="color:var(--muted)">1.6</span></div>
           <input type="range" id="oLw" min="0.6" max="4" step="0.2" value="1.6">
         </div>
@@ -272,8 +273,12 @@ table.ref tr:last-child td{border-bottom:0}
           <tr><td>(3)</td><td>domain identifier</td></tr>
           <tr><td>(3:10)</td><td>identifier, paired with domain 10</td></tr>
           <tr><td>{2}</td><td>disulfides across that pairing</td></tr>
-          <tr><td>[ANTI:CD3]</td><td>comment &mdash; also MOD, TYPE, LENGTH, CLASS, NOTE</td></tr>
-        </table></div>
+          <tr><td>[ANTI:CD3]</td><td>comment &mdash; also MOD, TYPE, LENGTH, CLASS, NOTE, ASEQ, DSEQ</td></tr>
+          <tr><td>|[ADC]</td><td>trailing pseudo-chain: nonspecific conjugation</td></tr>
+        </table>
+        <p class="hint">A shared light chain carries both specificities: heavy chains <code>VH.a</code> and
+        <code>VH.b</code> against a common <code>VL.ab</code>. Knob and hole cannot sit on one domain, nor can
+        both charges, and <code>!</code> is only valid on CH2.</p></div>
         <div class="grp"><h3>Modifications</h3><table class="ref">
           <tr><td>&gt;</td><td>knob</td></tr>
           <tr><td>@</td><td>hole</td></tr>
@@ -323,7 +328,7 @@ const CONNECTOR = new Set(['H','L']);
 /* heavy-derived vs light-derived domain origin (drives the pale/dark tint) */
 const HEAVYSIDE = new Set(['VH','VHH','CH1','CH2','CH3','CH4','CH5','H','VA','CA','VG','CG']);
 const LIGHTSIDE = new Set(['VL','CL','VB','CB','VD','CD']);
-const CMT_KEYS = ['ANTI','MOD','TYPE','LENGTH','CLASS','NOTE'];
+const CMT_KEYS = ['ANTI','MOD','TYPE','LENGTH','CLASS','NOTE','ASEQ','DSEQ'];
 
 /* ---------- palettes ---------- */
 const PALETTES = {
@@ -355,7 +360,7 @@ const LIBRARY = [
  {n:"Fc",c:"Canonical",d:"The hinge\u2013CH2\u2013CH3 homodimer on its own, the effector and half-life module.",a:"H(1:4){2}-CH2(2:5)-CH3(3:6)|H(4:1){2}-CH2(5:2)-CH3(6:3)"},
  {n:"One-armed IgG",c:"Canonical",d:"Monovalent IgG: one Fab arm, a bare knob-into-hole Fc on the other side.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:8){2}-CH2(4:9)-CH3>(5:10)|VL.a(6:1)-CL(7:2){1}|H(8:3){2}-CH2(9:4)-CH3@(10:5)"},
  {n:"Knob-into-hole",c:"Asymmetric bispecific IgG",d:"Reciprocal CH3 steric mutations drive heterodimerisation of two different heavy chains.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3>(5:12)|VL.a(6:1)-CL(7:2){1}|VH.b(8:13)-CH1(9:14){1}-H(10:3){2}-CH2(11:4)-CH3@(12:5)|VL.b(13:8)-CL(14:9){1}"},
- {n:"Common light chain",c:"Asymmetric bispecific IgG",d:"Both arms share one light chain, so only heavy-chain pairing has to be engineered.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3>(5:12)|VL.a(6:1)-CL(7:2){1}|VH.b(8:13)-CH1(9:14){1}-H(10:3){2}-CH2(11:4)-CH3@(12:5)|VL.a(13:8)-CL(14:9){1}"},
+ {n:"Common light chain",c:"Asymmetric bispecific IgG",d:"Both arms share one light chain, so only heavy-chain pairing has to be engineered. The shared chain carries both specificities, per the AbML convention.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3>(5:12)|VL.ab(6:1)-CL(7:2){1}|VH.b(8:13)-CH1(9:14){1}-H(10:3){2}-CH2(11:4)-CH3@(12:5)|VL.ab(13:8)-CL(14:9){1}"},
  {n:"CrossMab CH1-CL",c:"Asymmetric bispecific IgG",d:"CH1 and CL are exchanged in one arm, so the wrong light chain can no longer pair.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3>(5:12)|VL.a(6:1)-CL(7:2){1}|VH.b(8:13)-CL(9:14){1}-H(10:3){2}-CH2(11:4)-CH3@(12:5)|VL.b(13:8)-CH1(14:9){1}"},
  {n:"CrossMab VH-VL",c:"Asymmetric bispecific IgG",d:"VH and VL are exchanged in one arm, keeping the constant-domain interface untouched.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3>(5:12)|VL.a(6:1)-CL(7:2){1}|VL.b(8:13)-CH1(9:14){1}-H(10:3){2}-CH2(11:4)-CH3@(12:5)|VH.b(13:8)-CL(14:9){1}"},
  {n:"CrossMab Fab",c:"Asymmetric bispecific IgG",d:"The whole Fab is swapped in one arm \u2014 both the variable and the constant pair cross over.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3>(5:12)|VL.a(6:1)-CL(7:2){1}|VL.b(8:13)-CL(9:14){1}-H(10:3){2}-CH2(11:4)-CH3@(12:5)|VH.b(13:8)-CH1(14:9){1}"},
@@ -450,6 +455,9 @@ function parseDomain(tok, errors){
     i = e + 1;
   }
   if(i < s.length) errors.push('Trailing "'+s.slice(i)+'" in "'+s+'"');
+  if(d.mods.includes('>') && d.mods.includes('@')) errors.push(type+' carries both a knob and a hole');
+  if(d.mods.includes('+') && d.mods.includes('_')) errors.push(type+' carries both charges');
+  if(d.mods.includes('!') && type !== 'CH2') errors.push('"!" marks an aglycosyl CH2; not valid on '+type);
   return d;
 }
 
@@ -457,7 +465,12 @@ function parseAbML(src){
   const errors = [];
   const clean = (src||'').replace(/\s+/g,' ').trim();
   if(!clean) return {chains:[], errors, byId:new Map()};
-  const chains = splitTop(clean,'|')
+  let adc = false;
+  const raw = splitTop(clean,'|').filter(cs => {
+    if(/^\s*\[\s*ADC\s*\]\s*$/i.test(cs)){ adc = true; return false; }   // nonspecific conjugation
+    return true;
+  });
+  const chains = raw
     .map(cs => splitTop(cs,'-').map(t=>parseDomain(t, errors)).filter(Boolean))
     .filter(c => c.length);
   chains.forEach((c,ci)=>c.forEach((d,di)=>{ d.ci=ci; d.di=di; }));
@@ -472,7 +485,11 @@ function parseAbML(src){
       return t;
     }).filter(Boolean);
   });
-  return {chains, errors, byId};
+  if(chains.length > 1) chains.forEach((c, ci) => {
+    if(!c.some(d => d.pd.some(p => p.ci !== ci)))
+      errors.push('Chain ' + (ci+1) + ' does not interact with any other chain');
+  });
+  return {chains, errors, byId, adc};
 }
 
 function writeAbML(chains){
@@ -690,6 +707,29 @@ function readable(hex){
    SVG renderer
    ============================================================ */
 const FIGFONT = "'Times New Roman', Times, serif";
+const VDOM = new Set(['VH','VL','VHH','VA','VB','VG','VD']);
+
+/* Outline of one domain in its own local frame. Variable domains carry a notch at the
+   antigen-binding end; VHH additionally sits on a flat base so it reads as unpaired. */
+function domainOutline(d){
+  const rx = GEO.rx, ry = GEO.ry;
+  if(!VDOM.has(d.type)) return null;                       // constant domains stay plain ellipses
+  const ang = (d._paratope == null ? -Math.PI/2 : d._paratope);
+  const half = 0.21, depth = 0.70, steps = 56, flat = d.type === 'VHH' ? ry*0.62 : null;
+  const pt = t => {
+    let x = rx*Math.cos(t), y = ry*Math.sin(t);
+    if(flat != null && y > flat) y = flat;
+    return [x, y];
+  };
+  const span = 2*Math.PI - 2*half;
+  let path = '';
+  for(let i=0; i<=steps; i++){
+    const [x,y] = pt(ang + half + span*(i/steps));
+    path += (i ? ' L ' : 'M ') + f2(x) + ' ' + f2(y);
+  }
+  const [ax,ay] = [rx*Math.cos(ang)*depth, ry*Math.sin(ang)*depth];
+  return path + ' L ' + f2(ax) + ' ' + f2(ay) + ' Z';
+}
 
 function nodeExtent(d, opt){
   const t = (d._r||0)*Math.PI/180, rx=GEO.rx, ry=GEO.ry;
@@ -721,7 +761,19 @@ function buildFigure(abml, opt){
   const ink = opt.ink, lw = opt.lw;
   if(!L.nodes.length) return {body:'', box:{x0:0,y0:0,x1:1,y1:1}, parsed, L};
 
-  L.nodes.forEach(d => { d._fill = colorFor(d, parsed.chains, opt); d._tx = readable(d._fill); });
+  const cx0 = L.nodes.reduce((a,n)=>a+n._x,0)/L.nodes.length;
+  const cy0 = L.nodes.reduce((a,n)=>a+n._y,0)/L.nodes.length;
+  L.nodes.forEach(d => {
+    d._fill = colorFor(d, parsed.chains, opt);
+    d._tx = readable(d._fill);
+    if(VDOM.has(d.type)){
+      let wx = d._x - cx0, wy = d._y - cy0;
+      if(Math.hypot(wx, wy) < 1){ wx = 0; wy = -1; }                 // lone domain: point up
+      const r = -(d._r || 0) * Math.PI/180;                          // into the domain's own frame
+      d._paratope = Math.atan2(wx*Math.sin(r) + wy*Math.cos(r), wx*Math.cos(r) - wy*Math.sin(r));
+    }
+    d._outline = domainOutline(d);
+  });
 
   let under = '', over = '', marks = '';
 
@@ -732,13 +784,14 @@ function buildFigure(abml, opt){
       const mx=(a._x+b._x)/2, my=(a._y+b._y)/2;
       const nx=-(b._y-a._y), ny=(b._x-a._x), len=Math.hypot(nx,ny)||1;
       const bow = Math.min(16, Math.hypot(b._x-a._x, b._y-a._y)*0.38);
-      under += `<path d="M ${f2(a._x)} ${f2(a._y)} Q ${f2(mx+nx/len*bow)} ${f2(my+ny/len*bow)} ${f2(b._x)} ${f2(b._y)}" fill="none" stroke="${ink}" stroke-width="${lw}" stroke-linecap="round"/>`;
+      under += `<path d="M ${f2(a._x)} ${f2(a._y)} Q ${f2(mx+nx/len*bow)} ${f2(my+ny/len*bow)} ${f2(b._x)} ${f2(b._y)}" fill="none" stroke="${opt.paperColours ? '#6A1B9A' : ink}" stroke-width="${lw}" stroke-linecap="round"/>`;
       if(opt.linkLabel){
         const lx=mx+nx/len*bow*0.9, ly=my+ny/len*bow*0.9;
         marks += `<text x="${f2(lx)}" y="${f2(ly-4)}" font-size="8" font-family="${FIGFONT}" fill="${ink}" text-anchor="middle">L${c.d.comments.find(k=>k.key==='LENGTH')?' '+c.d.comments.find(k=>k.key==='LENGTH').val:''}</text>`;
       }
     } else {
-      under += `<line x1="${f2(a._x)}" y1="${f2(a._y)}" x2="${f2(b._x)}" y2="${f2(b._y)}" stroke="${ink}" stroke-width="${c.kind==='hinge'?lw*1.25:lw}" stroke-linecap="round"${opt.arrows?' marker-end="url(#ncArrow)"':''}/>`;
+      const col = (opt.paperColours && c.kind === 'hinge') ? '#1B5E20' : ink;
+      under += `<line x1="${f2(a._x)}" y1="${f2(a._y)}" x2="${f2(b._x)}" y2="${f2(b._y)}" stroke="${col}" stroke-width="${c.kind==='hinge'?lw*1.25:lw}" stroke-linecap="round"${opt.arrows?' marker-end="url(#ncArrow)"':''}/>`;
       if(c.kind==='hinge' && opt.hingeLabel)
         marks += `<text x="${f2((a._x+b._x)/2 - 11)}" y="${f2((a._y+b._y)/2)}" font-size="8.5" font-family="${FIGFONT}" fill="${ink}" text-anchor="middle">H</text>`;
     }
@@ -773,7 +826,9 @@ function buildFigure(abml, opt){
     const lbl = opt.labels ? (d.type + (opt.showSpec && d.spec ? d.spec : '')) : '';
     const size = lbl.length >= 4 ? 8 : lbl.length === 3 ? 9 : 10;
     doms += `<g transform="translate(${f2(d._x)},${f2(d._y)}) rotate(${f2(d._r||0)})">`
-      + `<ellipse rx="${GEO.rx}" ry="${GEO.ry}" fill="${d._fill}" stroke="${ink}" stroke-width="${lw}"/>`
+      + (d._outline
+          ? `<path d="${d._outline}" fill="${d._fill}" stroke="${ink}" stroke-width="${lw}" stroke-linejoin="round"/>`
+          : `<ellipse rx="${GEO.rx}" ry="${GEO.ry}" fill="${d._fill}" stroke="${ink}" stroke-width="${lw}"/>`)
       + drawMods(d, opt, ink)
       + (lbl ? (() => { const sh = (d.mods.includes('>')||d.mods.includes('@')) ? -(d._inX||GEO.rx)*0.46 : 0;
           return `<text x="${f2(sh)}" y="0" font-size="${size}" font-family="${FIGFONT}" fill="${d._tx}" text-anchor="middle" dominant-baseline="central" transform="rotate(${f2(-(d._r||0))} ${f2(sh)} 0)">${esc(lbl)}</text>`; })() : '')
@@ -796,6 +851,7 @@ function buildFigure(abml, opt){
 
 function commentLines(parsed){
   const out = [];
+  if(parsed.adc) out.push('[ADC]  nonspecific conjugation');
   parsed.chains.flat().forEach(d => d.comments.forEach(c => {
     out.push((d.type + (d.spec?'.'+d.spec:'') + (d.id!=null?' '+d.id:'')) + '  ' + c.key + ': ' + c.val);
   }));
@@ -869,6 +925,7 @@ function opts(){
     notes: $('#oNotes').checked,
     ss: $('#oSS').checked,
     arrows: $('#oArrow').checked,
+    paperColours: $('#oPaper').checked,
     lw: parseFloat($('#oLw').value),
     armAngle: parseFloat($('#oAngle').value),
     scale: parseFloat($('#oScale').value),
@@ -910,6 +967,7 @@ function draw(){
   $('#sTopo').textContent = usePanels
     ? S.panels.length + ' panel' + (S.panels.length>1?'s':'')
     : (L.topo === 'empty' ? 'nothing to draw' : L.topo);
+  $('#sTopo').textContent += (!usePanels && parsed.adc) ? ' \u00b7 ADC' : '';
   $('#sCount').textContent = usePanels ? '' :
     parsed.chains.length + ' chain' + (parsed.chains.length===1?'':'s') + ' · ' + nD + ' domain' + (nD===1?'':'s');
 
@@ -1171,7 +1229,7 @@ function fileStem(){
   $('#bClear').onclick = () => { S.abml=''; $('#abml').value=''; S.current=null; buildLibrary($('#libSearch').value); draw(); };
 
   /* style controls */
-  ['oLabels','oSpec','oHinge','oLink','oIds','oNotes','oSS','oArrow','oBg','oTint','oPanOn','oCols']
+  ['oLabels','oSpec','oHinge','oLink','oIds','oNotes','oSS','oArrow','oPaper','oBg','oTint','oPanOn','oCols']
     .forEach(id => $('#'+id).addEventListener('change', draw));
   const ranges = {oLw:['#oLwV', v=>v], oAngle:['#oAngleV', v=>v+'°'], oScale:['#oScaleV', v=>v+'×']};
   Object.entries(ranges).forEach(([id,[out,fmt]]) => {

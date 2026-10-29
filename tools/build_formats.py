@@ -139,8 +139,9 @@ F('Knob-into-hole', 'Asymmetric bispecific IgG',
   igg('a','b'))
 
 F('Common light chain', 'Asymmetric bispecific IgG',
-  'Both arms share one light chain, so only heavy-chain pairing has to be engineered.',
-  igg('a','b', arm2={'lspec':'a'}))
+  'Both arms share one light chain, so only heavy-chain pairing has to be engineered. '
+  'The shared chain carries both specificities, per the AbML convention.',
+  igg('a','b', arm1={'lspec':'ab'}, arm2={'lspec':'ab'}))
 
 F('CrossMab CH1-CL', 'Asymmetric bispecific IgG',
   'CH1 and CL are exchanged in one arm, so the wrong light chain can no longer pair.',

@@ -36,6 +36,17 @@ development history rather than earlier versions.
   the Blues, Reds and Greys ramps, with every colour editable. An optional switch restores the
   published connector colours (dark green hinges, purple linkers).
 
+### Drawing conventions
+
+- **Interchain disulfides are parallel rungs**, one line per bond. A crossed depiction implies a
+  cysteine bonded to two partners, which cannot happen.
+- **The CH1–CL disulfide is off by default.** Drawn between two adjacent domains it reads as a
+  bond between the domains themselves rather than between two cysteines; available as an option.
+- **Linkers loop visibly**, routed to whichever side is clear of neighbouring domains, so the
+  VH–VL connection in an scFv or a BiTE is explicit rather than hidden behind the ellipses.
+- **A terminal hinge still renders**, so F(ab')2 keeps the hinge below its arms. A C-terminal
+  clasp on two single-chain Fvs, as in DART, is correctly *not* treated as an Fc hinge.
+
 ### Validation
 
 The parser rejects a domain carrying both a knob and a hole, or both charges; rejects `!`

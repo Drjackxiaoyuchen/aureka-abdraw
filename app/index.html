@@ -389,7 +389,7 @@ const slug = n => n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''
    ============================================================ */
 
 /* ---------- grammar tables ---------- */
-const VERSION = '1.2.0';
+const VERSION = '1.2.1';
 const DTYPES = ['VHH','CH1','CH2','CH3','CH4','CH5','VH','VL','CL','VA','VB','VG','VD','CA','CB','CG','CD','H','L','X','C'];
 const MODCH  = '*>@+_!^';
 const MODNAME = {'*':'general modification','>':'knob','@':'hole','+':'positive charge','_':'negative charge','!':'aglycosyl CH2','^':'ADC conjugation site'};
@@ -800,14 +800,16 @@ function drawMods(d, opt, ink){
   if(d.mods.includes('>')) s += `<circle cx="${f2(inX*1.02)}" cy="0" r="4.8" fill="${d._fill}" stroke="${ink}" stroke-width="${opt.lw}"/>`;
   if(d.mods.includes('@')) s += `<circle cx="${f2(inX*0.56)}" cy="0" r="4.8" fill="${opt.bg||'#FFFFFF'}" stroke="${ink}" stroke-width="${opt.lw}"/>`;
   const charge = d.mods.includes('+') ? '+' : d.mods.includes('_') ? '−' : '';
-  if(charge) s += `<text x="${f2(inX*0.5)}" y="0" font-size="11" font-family="${FIGFONT}" fill="${d._tx}" text-anchor="middle" dominant-baseline="central" transform="rotate(${f2(-(d._r||0))} ${f2(inX*0.5)} 0)">${charge}</text>`;
+  if(charge) s += `<text x="${f2(inX*0.66)}" y="0" font-size="11" font-family="${FIGFONT}" fill="${d._tx}" text-anchor="middle" dominant-baseline="central" transform="rotate(${f2(-(d._r||0))} ${f2(inX*0.66)} 0)">${charge}</text>`;
   const rim = [];
   if(d.mods.includes('*')) rim.push('∗');
   if(d.mods.includes('^')) rim.push('◆');
   if(d.mods.includes('!')) rim.push('✕');
+  /* stack marks above and below the label rather than beside it, so they never sit on the text */
+  const mslot = [{x: 0, y: -GEO.ry*0.60}, {x: 0, y: GEO.ry*0.60}, {x: outX*0.56, y: -GEO.ry*0.60}];
   rim.forEach((g, i) => {
-    const y = -GEO.ry*0.52 + i*10;
-    s += `<text x="${f2(outX*0.62)}" y="${f2(y)}" font-size="8.5" font-family="${FIGFONT}" fill="${d._tx}" text-anchor="middle" dominant-baseline="central" transform="rotate(${f2(-(d._r||0))} ${f2(outX*0.62)} ${f2(y)})">${g}</text>`;
+    const q = mslot[i] || {x: outX*0.56, y: GEO.ry*0.60};
+    s += `<text x="${f2(q.x)}" y="${f2(q.y)}" font-size="8.5" font-family="${FIGFONT}" fill="${d._tx}" text-anchor="middle" dominant-baseline="central" transform="rotate(${f2(-(d._r||0))} ${f2(q.x)} ${f2(q.y)})">${g}</text>`;
   });
   return s;
 }

@@ -1,0 +1,1230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px system-ui,-apple-system,sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<title>Aureka AbDraw</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Spectral:wght@600&display=swap">
+<style>
+/* Layout: fixed app shell — header bar, control rail + paper canvas, AbML strip along the foot. */
+:root{
+  --bg:#F5F7FA; --surface:#FFFFFF; --surface2:#EAEEF5; --line:#D7DEEA;
+  --fg:#121821; --muted:#596375; --accent:#2A47C8; --accent-soft:#E4E9FA;
+  --danger:#B3261E; --ok:#1C7A4C; --paper:#FFFFFF; --paper-line:#F2F4F8;
+  --f-display:'Spectral',Georgia,'Times New Roman',serif;
+  --f-ui:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0D1118; --surface:#151B24; --surface2:#1D242F; --line:#29313E;
+  --fg:#E6EBF3; --muted:#939FB1; --accent:#8098F7; --accent-soft:#1B2340;
+  --danger:#F09289; --ok:#58C58D; --paper:#FFFFFF; --paper-line:#E7EBF1;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0D1118; --surface:#151B24; --surface2:#1D242F; --line:#29313E;
+  --fg:#E6EBF3; --muted:#939FB1; --accent:#8098F7; --accent-soft:#1B2340;
+  --danger:#F09289; --ok:#58C58D; --paper:#FFFFFF; --paper-line:#E7EBF1;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:13px;line-height:1.45}
+button,input,select,textarea{font:inherit;color:inherit}
+
+.app{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:12px;gap:10px;max-width:1500px;margin:0 auto}
+
+/* header */
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.brand{font-family:var(--f-display);font-size:19px;font-weight:600;letter-spacing:-.01em;margin:0;white-space:nowrap}
+.brand small{font-family:var(--f-ui);font-size:10.5px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-left:9px}
+.bar .sp{flex:1}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:6px 11px;cursor:pointer;white-space:nowrap;font-size:12.5px}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover{filter:brightness(1.08);color:#fff}
+.btn:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+/* main split */
+.main{display:grid;grid-template-columns:286px minmax(0,1fr);gap:10px;min-height:0}
+.rail{background:var(--surface);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid var(--line);background:var(--surface2);flex:none}
+.tab{flex:1;border:0;background:none;padding:8px 1px;cursor:pointer;font-size:11px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent}
+.tab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent);background:var(--surface)}
+.pane{padding:11px;overflow:auto;min-height:0;flex:1;display:flex;flex-direction:column;gap:11px}
+.pane[hidden]{display:none!important}
+
+.grp{display:flex;flex-direction:column;gap:7px}
+.grp>h3{margin:0;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.row{display:flex;gap:6px;align-items:center;min-width:0}
+.row>label{flex:1;min-width:0;font-size:12px}
+select,input[type=text],input[type=number],textarea{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:5px 7px;min-width:0;width:100%}
+input[type=color]{width:30px;height:24px;padding:1px;border:1px solid var(--line);border-radius:5px;background:var(--surface);cursor:pointer;flex:none}
+input[type=range]{width:100%;accent-color:var(--accent)}
+label.ck{display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer}
+label.ck input{accent-color:var(--accent);flex:none}
+
+.lib{display:flex;flex-direction:column;gap:2px}
+.lib button{text-align:left;border:0;background:none;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:12px}
+.lib button:hover{background:var(--surface2)}
+.libcat{margin:9px 0 1px;font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);opacity:.85}
+.lib .libcat:first-child{margin-top:0}
+.lib button[aria-current="true"]{background:var(--accent-soft);color:var(--accent);font-weight:500}
+
+/* chain builder */
+.chain{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.chain>header{display:flex;align-items:center;gap:6px;background:var(--surface2);padding:4px 7px;font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--muted)}
+.chain>header .sp{flex:1}
+.chain .doms{display:flex;flex-wrap:wrap;gap:4px;padding:7px}
+.dchip{display:flex;align-items:center;gap:3px;border:1px solid var(--line);border-radius:999px;padding:1px 3px 1px 8px;font-family:var(--f-mono);font-size:11px;background:var(--surface)}
+.dchip button,.chain header button{border:0;background:none;cursor:pointer;color:var(--muted);padding:0 4px;line-height:1;font-size:13px;border-radius:4px}
+.dchip button:hover,.chain header button:hover{color:var(--danger)}
+.swatch{width:9px;height:9px;border-radius:50%;border:1px solid rgba(0,0,0,.45);flex:none}
+
+/* canvas */
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.stagebar{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line);background:var(--surface2);font-size:11.5px;color:var(--muted);flex:none;flex-wrap:wrap}
+.stagebar .sp{flex:1}
+.paper{flex:1;min-height:0;overflow:auto;display:grid;place-items:center;padding:16px;
+  background-color:var(--paper);
+  background-image:linear-gradient(45deg,var(--paper-line) 25%,transparent 25%,transparent 75%,var(--paper-line) 75%),linear-gradient(45deg,var(--paper-line) 25%,transparent 25%,transparent 75%,var(--paper-line) 75%);
+  background-size:18px 18px;background-position:0 0,9px 9px}
+.paper.solid{background-image:none;background-color:#FFFFFF}
+.paper svg{max-width:100%;height:auto;display:block}
+
+/* abml strip */
+.foot{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px;display:flex;flex-direction:column;gap:6px;flex:none}
+.foot .hd{display:flex;align-items:center;gap:9px;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.foot .hd .sp{flex:1}
+#abml{font-family:var(--f-mono);font-size:12px;line-height:1.6;resize:vertical;min-height:62px;max-height:170px}
+.status{font-size:11.5px;font-weight:500;letter-spacing:0;text-transform:none}
+.status.ok{color:var(--ok)} .status.bad{color:var(--danger)}
+.notes{font-size:11.5px;color:var(--muted);font-family:var(--f-mono);white-space:pre-wrap;word-break:break-word}
+.notes:empty{display:none}
+
+.hint{font-size:11.5px;color:var(--muted);margin:0}
+table.ref{width:100%;border-collapse:collapse;font-size:11.5px}
+table.ref td{padding:2.5px 0;vertical-align:top;border-bottom:1px solid var(--line)}
+table.ref td:first-child{font-family:var(--f-mono);white-space:nowrap;padding-right:9px;color:var(--accent);width:1%}
+table.ref tr:last-child td{border-bottom:0}
+.hint code{font-family:var(--f-mono);font-size:11px;background:var(--surface2);padding:1px 4px;border-radius:4px}
+.panelrow{display:flex;gap:6px;align-items:center}
+.panelrow input[type=text]{font-family:var(--f-mono);font-size:11px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 15px;border-radius:999px;font-size:12.5px;z-index:40;box-shadow:0 6px 22px rgba(0,0,0,.26)}
+.toast[hidden]{display:none!important}
+
+@media (max-width:860px){
+  .main{grid-template-columns:1fr;grid-template-rows:minmax(220px,42vh) minmax(240px,auto)}
+  .main .stage{order:-1}
+  .rail{max-height:46vh}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="app">
+  <div class="bar">
+    <h1 class="brand">Aureka AbDraw<small>AbML → figure</small></h1>
+    <span class="sp"></span>
+    <button class="btn" id="bCopy">Copy AbML</button>
+    <button class="btn" id="bCopySvg">Copy SVG</button>
+    <button class="btn" id="bPng">PNG</button>
+    <button class="btn pri" id="bSvg">Export SVG</button>
+  </div>
+
+  <div class="main">
+    <div class="rail">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="tab-lib"  aria-selected="true"  aria-controls="pane-lib">Formats</button>
+        <button class="tab" role="tab" id="tab-bld"  aria-selected="false" aria-controls="pane-bld">Build</button>
+        <button class="tab" role="tab" id="tab-sty"  aria-selected="false" aria-controls="pane-sty">Style</button>
+        <button class="tab" role="tab" id="tab-pan"  aria-selected="false" aria-controls="pane-pan">Panels</button>
+        <button class="tab" role="tab" id="tab-syn"  aria-selected="false" aria-controls="pane-syn">Syntax</button>
+      </div>
+
+      <div class="pane" id="pane-lib" role="tabpanel" aria-labelledby="tab-lib">
+        <div class="grp">
+          <h3>Search</h3>
+          <input type="text" id="libSearch" placeholder="knob, crossmab, scFv…" autocomplete="off">
+        </div>
+        <div class="grp"><h3>Format library</h3><div class="lib" id="libList"></div></div>
+      </div>
+
+      <div class="pane" id="pane-bld" role="tabpanel" aria-labelledby="tab-bld" hidden>
+        <div class="grp">
+          <h3>Add domain</h3>
+          <div class="row">
+            <select id="addType"></select>
+            <select id="addSpec" style="max-width:74px"></select>
+          </div>
+          <div class="row" id="addMods"></div>
+          <div class="row">
+            <select id="addChain" style="flex:1"></select>
+            <button class="btn" id="bAddDom">Add</button>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>Chains</h3>
+          <div id="chainList" style="display:flex;flex-direction:column;gap:7px"></div>
+          <button class="btn" id="bAddChain">+ New chain</button>
+        </div>
+        <div class="grp">
+          <h3>Repair</h3>
+          <button class="btn" id="bRenumber">Renumber &amp; auto-pair</button>
+          <p class="hint">Renumbers every domain left to right and pairs V with V, C with C across the facing chain — the same bookkeeping <code>Tidy</code> does in abYdraw.</p>
+        </div>
+      </div>
+
+      <div class="pane" id="pane-sty" role="tabpanel" aria-labelledby="tab-sty" hidden>
+        <div class="grp">
+          <h3>Labels</h3>
+          <label class="ck"><input type="checkbox" id="oLabels" checked> Domain labels</label>
+          <label class="ck"><input type="checkbox" id="oSpec"> Show specificity (VH<sub>a</sub>)</label>
+          <label class="ck"><input type="checkbox" id="oHinge"> Label hinges</label>
+          <label class="ck"><input type="checkbox" id="oLink"> Label linkers</label>
+          <label class="ck"><input type="checkbox" id="oIds"> Domain ID numbers</label>
+          <label class="ck"><input type="checkbox" id="oNotes" checked> Comment list beside figure</label>
+        </div>
+        <div class="grp">
+          <h3>Bonds</h3>
+          <label class="ck"><input type="checkbox" id="oSS" checked> Disulfide bonds</label>
+          <label class="ck"><input type="checkbox" id="oArrow"> N→C direction arrows</label>
+          <div class="row"><label for="oLw">Line weight</label><span id="oLwV" style="color:var(--muted)">1.6</span></div>
+          <input type="range" id="oLw" min="0.6" max="4" step="0.2" value="1.6">
+        </div>
+        <div class="grp">
+          <h3>Geometry</h3>
+          <div class="row"><label for="oAngle">Arm angle</label><span id="oAngleV" style="color:var(--muted)">30°</span></div>
+          <input type="range" id="oAngle" min="10" max="55" step="1" value="30">
+          <div class="row"><label for="oScale">Scale</label><span id="oScaleV" style="color:var(--muted)">1.9×</span></div>
+          <input type="range" id="oScale" min="0.8" max="4" step="0.1" value="1.9">
+        </div>
+        <div class="grp">
+          <h3>Ground</h3>
+          <label class="ck"><input type="checkbox" id="oBg"> Opaque white background</label>
+          <p class="hint">Off = transparent, per the Aureka figure guide.</p>
+        </div>
+        <div class="grp">
+          <h3>Tint rule</h3>
+          <select id="oTint">
+            <option value="type">By domain origin — heavy dark, light pale</option>
+            <option value="chain">By chain — first of each pair dark</option>
+            <option value="flat">By specificity only — one hue per arm</option>
+          </select>
+          <p class="hint">Domain origin is the CrossMab convention: colour travels with the domain when VH/VL or CH1/CL swap chains.</p>
+        </div>
+        <div class="grp">
+          <h3>Specificity palette</h3>
+          <div id="palList" style="display:flex;flex-direction:column;gap:5px"></div>
+          <div class="row">
+            <select id="palPreset" style="flex:1">
+              <option value="aureka">Aureka — blue lead / red benchmark</option>
+              <option value="figure">Reference figure — red / blue</option>
+              <option value="strict">Aureka strict — Blues &amp; Reds ramps</option>
+            </select>
+            <button class="btn" id="bPal">Apply</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pane" id="pane-pan" role="tabpanel" aria-labelledby="tab-pan" hidden>
+        <p class="hint">Build a lettered multi-panel figure. Each row is one AbML string; the grid exports as a single SVG.</p>
+        <div class="grp"><h3>Panels</h3><div id="panList" style="display:flex;flex-direction:column;gap:5px"></div>
+          <div class="row">
+            <button class="btn" id="bPanAdd" style="flex:1">+ Add current</button>
+            <button class="btn" id="bPanClear">Clear</button>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>Grid</h3>
+          <div class="row"><label for="oCols">Columns</label><input type="number" id="oCols" min="1" max="8" value="4" style="max-width:62px"></div>
+          <label class="ck"><input type="checkbox" id="oPanOn"> Show panel grid on canvas</label>
+        </div>
+      </div>
+
+      <div class="pane" id="pane-syn" role="tabpanel" aria-labelledby="tab-syn" hidden>
+        <p class="hint">AbML describes a molecule as chains of domains. Chains are separated by <code>|</code>, domains within a chain by <code>-</code>, reading N-terminus to C-terminus.</p>
+        <div class="grp"><h3>Domain types</h3><table class="ref">
+          <tr><td>VH VL</td><td>variable heavy / light</td></tr>
+          <tr><td>CH1&ndash;CH5</td><td>constant heavy</td></tr>
+          <tr><td>CL</td><td>constant light</td></tr>
+          <tr><td>VHH</td><td>camelid single domain</td></tr>
+          <tr><td>H</td><td>hinge (drawn as a connector)</td></tr>
+          <tr><td>L</td><td>linker (drawn as a connector)</td></tr>
+          <tr><td>X</td><td>any other protein domain</td></tr>
+          <tr><td>C</td><td>chemical crosslinker</td></tr>
+          <tr><td>VA CA VB CB</td><td>TCR alpha / beta</td></tr>
+          <tr><td>VG CG VD CD</td><td>TCR gamma / delta</td></tr>
+        </table></div>
+        <div class="grp"><h3>Qualifiers</h3><table class="ref">
+          <tr><td>.a &ndash; .h</td><td>specificity, picks the colour</td></tr>
+          <tr><td>(3)</td><td>domain identifier</td></tr>
+          <tr><td>(3:10)</td><td>identifier, paired with domain 10</td></tr>
+          <tr><td>{2}</td><td>disulfides across that pairing</td></tr>
+          <tr><td>[ANTI:CD3]</td><td>comment &mdash; also MOD, TYPE, LENGTH, CLASS, NOTE</td></tr>
+        </table></div>
+        <div class="grp"><h3>Modifications</h3><table class="ref">
+          <tr><td>&gt;</td><td>knob</td></tr>
+          <tr><td>@</td><td>hole</td></tr>
+          <tr><td>+ _</td><td>positive / negative charge pair</td></tr>
+          <tr><td>^</td><td>conjugation site</td></tr>
+          <tr><td>!</td><td>aglycosyl CH2</td></tr>
+          <tr><td>*</td><td>general modification</td></tr>
+        </table>
+        <p class="hint">Modifications sit straight after the type and before the specificity: <code>CH3&gt;(5:12)</code>, <code>VL*.a(6:1)</code>.</p></div>
+        <div class="grp"><h3>Worked example</h3>
+          <p class="hint" style="font-family:var(--f-mono);line-height:1.7;word-break:break-all">VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3&gt;(5:12)</p>
+          <p class="hint">One knob-bearing heavy chain: VH of specificity a paired with domain 6, CH1 paired with 7 through one disulfide, hinge paired with the other hinge through two, then CH2 and a knobbed CH3.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stagebar">
+        <strong id="sName" style="color:var(--fg)"></strong><span id="sDesc" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</span><span class="sp"></span><span id="sTopo"></span><span id="sCount"></span>
+      </div>
+      <div class="paper" id="paper"></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="hd"><span>AbML</span><span class="status" id="sStatus"></span><span class="sp"></span>
+      <button class="btn" id="bClear" style="padding:3px 9px;font-size:11.5px">Clear</button>
+    </div>
+    <textarea id="abml" spellcheck="false" autocomplete="off"></textarea>
+    <div class="notes" id="sNotes"></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+"use strict";
+/* ============================================================
+   Aureka AbDraw — AbML v1.06 parser + schematic renderer
+   AbML grammar: Sweet-Jones, Ahmad & Martin, mAbs 2022 (abYdraw, GPL-3.0)
+   ============================================================ */
+
+/* ---------- grammar tables ---------- */
+const DTYPES = ['VHH','CH1','CH2','CH3','CH4','CH5','VH','VL','CL','VA','VB','VG','VD','CA','CB','CG','CD','H','L','X','C'];
+const MODCH  = '*>@+_!^';
+const MODNAME = {'*':'general modification','>':'knob','@':'hole','+':'positive charge','_':'negative charge','!':'aglycosyl CH2','^':'ADC conjugation site'};
+const CONNECTOR = new Set(['H','L']);
+/* heavy-derived vs light-derived domain origin (drives the pale/dark tint) */
+const HEAVYSIDE = new Set(['VH','VHH','CH1','CH2','CH3','CH4','CH5','H','VA','CA','VG','CG']);
+const LIGHTSIDE = new Set(['VL','CL','VB','CB','VD','CD']);
+const CMT_KEYS = ['ANTI','MOD','TYPE','LENGTH','CLASS','NOTE'];
+
+/* ---------- palettes ---------- */
+const PALETTES = {
+  /* Aureka figure guide: own molecules on the Blues ramp off #0000FF,
+     benchmarks on the Reds ramp off #FF0000, controls on Greys off #808080 */
+  aureka: {a:['#0000FF','#00FFFF'], b:['#FF0000','#FFD700'], c:['#808080','#C0C0C0'],
+           d:['#00008B','#87CEFA'], e:['#8B0000','#FA8072'], f:['#4682B4','#B0C4DE'],
+           g:['#DC143C','#F08080'], h:['#191970','#AFEEEE']},
+  figure: {a:['#FF0000','#FFD700'], b:['#0000FF','#00FFFF'], c:['#808080','#C0C0C0'],
+           d:['#8B0000','#FA8072'], e:['#00008B','#87CEFA'], f:['#DC143C','#F08080'],
+           g:['#4682B4','#B0C4DE'], h:['#191970','#AFEEEE']},
+  strict: {a:['#0000FF','#87CEFA'], b:['#FF0000','#FFA07A'], c:['#808080','#D3D3D3'],
+           d:['#00008B','#B0C4DE'], e:['#8B0000','#F08080'], f:['#4682B4','#ADD8E6'],
+           g:['#B22222','#FA8072'], h:['#191970','#AFEEEE']}
+};
+/* non-Ig domains reuse the ChimeraX colours from the Aureka structure guide */
+const COL_X = '#6C5ABA', COL_XL = '#CCC2FB', COL_C = '#F7DEB5';
+
+/* ---------- format library (authored in tools/build_formats.py) ---------- */
+const LIBRARY = [
+ {n:"Fv",c:"Fragments",d:"The minimal antigen-binding unit: a VH\u2013VL heterodimer with no constant domains.",a:"VH.a(1:2)|VL.a(2:1)"},
+ {n:"scFv",c:"Fragments",d:"VH and VL carried on one polypeptide and held together by a flexible linker.",a:"VH.a(1:3)-L(2)-VL.a(3:1)"},
+ {n:"Fab",c:"Fragments",d:"Heavy-chain Fd (VH\u2013CH1) disulfide-bonded to a complete light chain.",a:"VH.a(1:3)-CH1(2:4){1}|VL.a(3:1)-CL(4:2){1}"},
+ {n:"F(ab')2",c:"Fragments",d:"Two Fab arms held together by the hinge disulfides, with no Fc.",a:"VH.a(1:4)-CH1(2:5){1}-H(3:8){2}|VL.a(4:1)-CL(5:2){1}|VH.a(6:9)-CH1(7:10){1}-H(8:3){2}|VL.a(9:6)-CL(10:7){1}"},
+ {n:"VHH (nanobody)",c:"Fragments",d:"A single camelid heavy-chain variable domain that binds without a light chain.",a:"VHH.a(1)"},
+ {n:"Biparatopic VHH",c:"Fragments",d:"Two VHH domains in tandem, each raised against a different epitope on one target.",a:"VHH.a(1)-L(2)-VHH.b(3)"},
+ {n:"Trivalent VHH",c:"Fragments",d:"Three linked VHH domains giving three binding specificities on one short chain.",a:"VHH.a(1)-L(2)-VHH.b(3)-L(4)-VHH.c(5)"},
+ {n:"IgG1",c:"Canonical",d:"The parental monospecific, bivalent antibody that every format below modifies.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3(5:12)|VL.a(6:1)-CL(7:2){1}|VH.a(8:13)-CH1(9:14){1}-H(10:3){2}-CH2(11:4)-CH3(12:5)|VL.a(13:8)-CL(14:9){1}"},
+ {n:"Fc",c:"Canonical",d:"The hinge\u2013CH2\u2013CH3 homodimer on its own, the effector and half-life module.",a:"H(1:4){2}-CH2(2:5)-CH3(3:6)|H(4:1){2}-CH2(5:2)-CH3(6:3)"},
+ {n:"One-armed IgG",c:"Canonical",d:"Monovalent IgG: one Fab arm, a bare knob-into-hole Fc on the other side.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:8){2}-CH2(4:9)-CH3>(5:10)|VL.a(6:1)-CL(7:2){1}|H(8:3){2}-CH2(9:4)-CH3@(10:5)"},
+ {n:"Knob-into-hole",c:"Asymmetric bispecific IgG",d:"Reciprocal CH3 steric mutations drive heterodimerisation of two different heavy chains.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3>(5:12)|VL.a(6:1)-CL(7:2){1}|VH.b(8:13)-CH1(9:14){1}-H(10:3){2}-CH2(11:4)-CH3@(12:5)|VL.b(13:8)-CL(14:9){1}"},
+ {n:"Common light chain",c:"Asymmetric bispecific IgG",d:"Both arms share one light chain, so only heavy-chain pairing has to be engineered.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3>(5:12)|VL.a(6:1)-CL(7:2){1}|VH.b(8:13)-CH1(9:14){1}-H(10:3){2}-CH2(11:4)-CH3@(12:5)|VL.a(13:8)-CL(14:9){1}"},
+ {n:"CrossMab CH1-CL",c:"Asymmetric bispecific IgG",d:"CH1 and CL are exchanged in one arm, so the wrong light chain can no longer pair.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3>(5:12)|VL.a(6:1)-CL(7:2){1}|VH.b(8:13)-CL(9:14){1}-H(10:3){2}-CH2(11:4)-CH3@(12:5)|VL.b(13:8)-CH1(14:9){1}"},
+ {n:"CrossMab VH-VL",c:"Asymmetric bispecific IgG",d:"VH and VL are exchanged in one arm, keeping the constant-domain interface untouched.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3>(5:12)|VL.a(6:1)-CL(7:2){1}|VL.b(8:13)-CH1(9:14){1}-H(10:3){2}-CH2(11:4)-CH3@(12:5)|VH.b(13:8)-CL(14:9){1}"},
+ {n:"CrossMab Fab",c:"Asymmetric bispecific IgG",d:"The whole Fab is swapped in one arm \u2014 both the variable and the constant pair cross over.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3>(5:12)|VL.a(6:1)-CL(7:2){1}|VL.b(8:13)-CL(9:14){1}-H(10:3){2}-CH2(11:4)-CH3@(12:5)|VH.b(13:8)-CH1(14:9){1}"},
+ {n:"Orthogonal Fab",c:"Asymmetric bispecific IgG",d:"Complementary charge and steric mutations across both Fab interfaces enforce correct pairing.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3>(5:12)|VL.a(6:1)-CL(7:2){1}|VH*+.b(8:13)-CH1*>(9:14){1}-H(10:3){2}-CH2(11:4)-CH3@(12:5)|VL*_.b(13:8)-CL*@(14:9){1}"},
+ {n:"Charge-pair bispecific",c:"Asymmetric bispecific IgG",d:"Electrostatic steering: opposing charges at the CH3 and CH1/CL interfaces instead of knobs.",a:"VH.a(1:6)-CH1*+(2:7){1}-H(3:10){2}-CH2(4:11)-CH3*+(5:12)|VL.a(6:1)-CL*_(7:2){1}|VH.b(8:13)-CH1*_(9:14){1}-H(10:3){2}-CH2(11:4)-CH3*_(12:5)|VL.b(13:8)-CL*+(14:9){1}"},
+ {n:"DuetMab",c:"Asymmetric bispecific IgG",d:"Knob-into-hole plus an engineered CH1\u2013CL disulfide replacing the native one in one arm.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3>(5:12)|VL.a(6:1)-CL(7:2){1}|VH.b(8:13)-CH1*(9:14){1}[MOD:DISULFIDE]-H(10:3){2}-CH2(11:4)-CH3@(12:5)|VL.b(13:8)-CL*(14:9){1}[MOD:DISULFIDE]"},
+ {n:"kappa-lambda body",c:"Asymmetric bispecific IgG",d:"One common heavy chain pairs with a kappa and a lambda light chain, giving two specificities.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3(5:12)|VL.a(6:1)-CL(7:2){1}[NOTE:kappa]|VH.a(8:13)-CH1(9:14){1}-H(10:3){2}-CH2(11:4)-CH3(12:5)|VL.b(13:8)-CL(14:9){1}[NOTE:lambda]"},
+ {n:"DVD-Ig",c:"Appended IgG",d:"A second variable domain stacked N-terminal to each native one: tetravalent and bispecific.",a:"VH.b(1:8)-L(2)-VH.a(3:10)-CH1(4:11){1}-H(5:16){2}-CH2(6:17)-CH3(7:18)|VL.b(8:1)-L(9)-VL.a(10:3)-CL(11:4){1}|VH.b(12:19)-L(13)-VH.a(14:21)-CH1(15:22){1}-H(16:5){2}-CH2(17:6)-CH3(18:7)|VL.b(19:12)-L(20)-VL.a(21:14)-CL(22:15){1}"},
+ {n:"IgG-scFv (heavy C-term)",c:"Appended IgG",d:"An scFv fused to each heavy-chain C-terminus \u2014 tetravalent, bispecific, symmetric.",a:"VH.a(1:10)-CH1(2:11){1}-H(3:14){2}-CH2(4:15)-CH3(5:16)-L(6)-VH.b(7:9)-L(8)-VL.b(9:7)|VL.a(10:1)-CL(11:2){1}|VH.a(12:21)-CH1(13:22){1}-H(14:3){2}-CH2(15:4)-CH3(16:5)-L(17)-VH.b(18:20)-L(19)-VL.b(20:18)|VL.a(21:12)-CL(22:13){1}"},
+ {n:"IgG-scFv (light C-term)",c:"Appended IgG",d:"The same idea with the scFv hung off each light-chain C-terminus instead.",a:"VH.a(1:6)-CH1(2:7){1}-H(3:14){2}-CH2(4:15)-CH3(5:16)|VL.a(6:1)-CL(7:2){1}-L(8)-VH.b(9:11)-L(10)-VL.b(11:9)|VH.a(12:17)-CH1(13:18){1}-H(14:3){2}-CH2(15:4)-CH3(16:5)|VL.a(17:12)-CL(18:13){1}-L(19)-VH.b(20:22)-L(21)-VL.b(22:20)"},
+ {n:"scFv-IgG (heavy N-term)",c:"Appended IgG",d:"An scFv placed ahead of each VH, so the second specificity sits at the tip of the arm.",a:"VH.b(1:3)-L(2)-VL.b(3:1)-L(4)-VH.a(5:10)-CH1(6:11){1}-H(7:18){2}-CH2(8:19)-CH3(9:20)|VL.a(10:5)-CL(11:6){1}|VH.b(12:14)-L(13)-VL.b(14:12)-L(15)-VH.a(16:21)-CH1(17:22){1}-H(18:7){2}-CH2(19:8)-CH3(20:9)|VL.a(21:16)-CL(22:17){1}"},
+ {n:"IgG-VHH",c:"Appended IgG",d:"A single VHH domain on each heavy-chain C-terminus \u2014 the smallest symmetric append.",a:"VH.a(1:8)-CH1(2:9){1}-H(3:12){2}-CH2(4:13)-CH3(5:14)-L(6)-VHH.b(7)|VL.a(8:1)-CL(9:2){1}|VH.a(10:17)-CH1(11:18){1}-H(12:3){2}-CH2(13:4)-CH3(14:5)-L(15)-VHH.b(16)|VL.a(17:10)-CL(18:11){1}"},
+ {n:"Two-in-one Fab (DAF)",c:"Appended IgG",d:"One paratope engineered to bind two antigens, so the molecule stays a plain IgG.",a:"VH.ab(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3(5:12)|VL.ab(6:1)-CL(7:2){1}|VH.ab(8:13)-CH1(9:14){1}-H(10:3){2}-CH2(11:4)-CH3(12:5)|VL.ab(13:8)-CL(14:9){1}"},
+ {n:"ADC (site-specific)",c:"Appended IgG",d:"An IgG carrying defined conjugation sites for a cytotoxic payload.",a:"VH.a(1:6)-CH1^(2:7){1}[MOD:CONJUGATION]-H(3:10){2}-CH2(4:11)-CH3(5:12)|VL.a(6:1)-CL(7:2){1}|VH.a(8:13)-CH1^(9:14){1}[MOD:CONJUGATION]-H(10:3){2}-CH2(11:4)-CH3(12:5)|VL.a(13:8)-CL(14:9){1}"},
+ {n:"BiTE (tandem scFv)",c:"Fragment bispecifics",d:"Two scFvs in tandem on one chain \u2014 the T-cell engager archetype, no Fc at all.",a:"VH.a(1:3)-L(2)-VL.a(3:1)-L(4)-VH.b(5:7)-L(6)-VL.b(7:5)"},
+ {n:"Diabody",c:"Fragment bispecifics",d:"Linkers too short to fold back, so two chains cross-pair into a compact bivalent dimer.",a:"VH.a(1:6)-L(2)-VL.b(3:4)|VH.b(4:3)-L(5)-VL.a(6:1)"},
+ {n:"scDiabody",c:"Fragment bispecifics",d:"The diabody folded onto a single chain by adding a third, longer middle linker.",a:"VH.a(1:7)-L(2)-VL.b(3:5)-L(4)-VH.b(5:3)-L(6)-VL.a(7:1)"},
+ {n:"DART",c:"Fragment bispecifics",d:"A diabody locked by an added C-terminal interchain disulfide for stability.",a:"VH.a(1:7)-L(2)-VL.b(3:5)-H*(4:8){1}[MOD:DISULFIDE]|VH.b(5:3)-L(6)-VL.a(7:1)-H*(8:4){1}[MOD:DISULFIDE]"},
+ {n:"TandAb",c:"Fragment bispecifics",d:"Two identical four-domain chains dimerise head-to-tail into a tetravalent bispecific.",a:"VH.a(1:14)-L(2)-VL.b(3:12)-L(4)-VH.b(5:10)-L(6)-VL.a(7:8)|VH.a(8:7)-L(9)-VL.b(10:5)-L(11)-VH.b(12:3)-L(13)-VL.a(14:1)"},
+ {n:"Triplebody",c:"Fragment bispecifics",d:"Three scFvs in a row on one chain, giving three specificities without an Fc.",a:"VH.a(1:3)-L(2)-VL.a(3:1)-L(4)-VH.b(5:7)-L(6)-VL.b(7:5)-L(8)-VH.c(9:11)-L(10)-VL.c(11:9)"},
+ {n:"scFv-Fc",c:"Fc fusions",d:"An scFv on each side of an Fc: bivalent, monospecific, roughly half the mass of an IgG.",a:"VH.a(1:3)-L(2)-VL.a(3:1)-H(4:10){2}-CH2(5:11)-CH3(6:12)|VH.a(7:9)-L(8)-VL.a(9:7)-H(10:4){2}-CH2(11:5)-CH3(12:6)"},
+ {n:"VHH-Fc (HCAb)",c:"Fc fusions",d:"Camelid-style heavy-chain-only antibody: one VHH per chain, straight onto the hinge.",a:"VHH.a(1)-H(2:6){2}-CH2(3:7)-CH3(4:8)|VHH.a(5)-H(6:2){2}-CH2(7:3)-CH3(8:4)"},
+ {n:"Bispecific VHH-Fc",c:"Fc fusions",d:"Two different VHH domains on a knob-into-hole Fc \u2014 the compact asymmetric bispecific.",a:"VHH.a(1)-H(2:6){2}-CH2(3:7)-CH3>(4:8)|VHH.b(5)-H(6:2){2}-CH2(7:3)-CH3@(8:4)"},
+ {n:"Tandem scFv-Fc",c:"Fc fusions",d:"Two tandem scFvs per chain on an Fc: tetravalent and bispecific, fully symmetric.",a:"VH.a(1:3)-L(2)-VL.a(3:1)-L(4)-VH.b(5:7)-L(6)-VL.b(7:5)-H(8:18){2}-CH2(9:19)-CH3(10:20)|VH.a(11:13)-L(12)-VL.a(13:11)-L(14)-VH.b(15:17)-L(16)-VL.b(17:15)-H(18:8){2}-CH2(19:9)-CH3(20:10)"},
+ {n:"Diabody-Fc",c:"Fc fusions",d:"A diabody grafted onto an Fc, which restores long serum half-life.",a:"VH.a(1:9)-L(2)-VL.b(3:7)-H(4:10){2}-CH2(5:11)-CH3(6:12)|VH.b(7:3)-L(8)-VL.a(9:1)-H(10:4){2}-CH2(11:5)-CH3(12:6)"},
+ {n:"Receptor-Fc trap",c:"Fc fusions",d:"A soluble receptor ectodomain on an Fc, used to soak up a ligand.",a:"X(1)[TYPE:FUSION,NOTE:receptor ectodomain]-H(2:6){2}-CH2(3:7)-CH3(4:8)|X(5)[TYPE:FUSION,NOTE:receptor ectodomain]-H(6:2){2}-CH2(7:3)-CH3(8:4)"},
+ {n:"Zipper-assembled bispecific",c:"Fc fusions",d:"A leucine zipper on each C-terminus forces the two different half-antibodies together.",a:"VH.a(1:7)-CH1(2:8){1}-H(3:11){2}-CH2(4:12)-CH3(5:13)-X(6:14)[TYPE:ZIPPER]|VL.a(7:1)-CL(8:2){1}|VH.b(9:15)-CH1(10:16){1}-H(11:3){2}-CH2(12:4)-CH3(13:5)-X(14:6)[TYPE:ZIPPER]|VL.b(15:9)-CL(16:10){1}"},
+ {n:"Trispecific IgG-scFv",c:"Trispecific",d:"A knob-into-hole bispecific with a third specificity appended as an scFv on one chain.",a:"VH.a(1:10)-CH1(2:11){1}-H(3:14){2}-CH2(4:15)-CH3>(5:16)-L(6)-VH.c(7:9)-L(8)-VL.c(9:7)|VL.a(10:1)-CL(11:2){1}|VH.b(12:17)-CH1(13:18){1}-H(14:3){2}-CH2(15:4)-CH3@(16:5)|VL.b(17:12)-CL(18:13){1}"},
+ {n:"Trispecific VHH-Fc",c:"Trispecific",d:"Three VHH domains distributed across a knob-into-hole Fc.",a:"VHH.a(1)-L(2)-VHH.b(3)-H(4:8){2}-CH2(5:9)-CH3>(6:10)|VHH.c(7)-H(8:4){2}-CH2(9:5)-CH3@(10:6)"},
+ {n:"TCR alpha-beta",c:"Receptors",d:"The alpha/beta T-cell receptor ectodomain pair.",a:"VA(1:3)-CA(2:4){1}|VB(3:1)-CB(4:2){1}"},
+ {n:"TCR gamma-delta",c:"Receptors",d:"The gamma/delta T-cell receptor ectodomain pair.",a:"VG(1:3)-CG(2:4){1}|VD(3:1)-CD(4:2){1}"},
+].map(x => ({name:x.n, category:x.c, description:x.d, abml:x.a}));
+
+const byName = n => LIBRARY.find(f => f.name === n);
+const slug = n => n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+
+/* ---------- small helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const f2 = n => (Math.round(n*100)/100);
+function splitTop(str, sep){
+  const out=[]; let d=0, cur='';
+  for(const ch of str){
+    if(ch==='('||ch==='['||ch==='{') d++;
+    else if(ch===')'||ch===']'||ch==='}') d--;
+    if(ch===sep && d<=0){ out.push(cur); cur=''; } else cur+=ch;
+  }
+  out.push(cur); return out;
+}
+
+/* ---------- parser ---------- */
+function parseDomain(tok, errors){
+  const s = tok.trim(); if(!s) return null;
+  const U = s.toUpperCase();
+  let type=null, i=0;
+  for(const t of DTYPES){ if(U.startsWith(t)){ type=t; i=t.length; break; } }
+  if(!type){ errors.push('Unrecognised domain "'+s+'"'); return null; }
+  const d = {type, mods:[], spec:'', id:null, partners:[], ss:0, comments:[], raw:s};
+  while(i < s.length){
+    const ch = s[i];
+    if(MODCH.includes(ch)){ if(!d.mods.includes(ch)) d.mods.push(ch); i++; }
+    else if(ch === '.'){ i++; let sp=''; while(i<s.length && /[a-hA-H]/.test(s[i])){ sp+=s[i].toLowerCase(); i++; } 
+      if(!sp) errors.push('Empty specificity on "'+s+'"'); d.spec = sp; }
+    else break;
+  }
+  if(s[i] === '('){
+    const e = s.indexOf(')', i);
+    if(e < 0){ errors.push('Unclosed ( in "'+s+'"'); return d; }
+    const parts = s.slice(i+1, e).split(':');
+    const idn = parseInt(parts[0], 10);
+    if(!isNaN(idn)) d.id = idn;
+    if(parts[1]) d.partners = parts[1].split(',').map(x=>parseInt(x,10)).filter(n=>!isNaN(n));
+    i = e + 1;
+  }
+  if(s[i] === '{'){
+    const e = s.indexOf('}', i);
+    if(e < 0){ errors.push('Unclosed { in "'+s+'"'); return d; }
+    d.ss = parseInt(s.slice(i+1, e), 10) || 0;
+    i = e + 1;
+  }
+  while(s[i] === '['){
+    const e = s.indexOf(']', i);
+    if(e < 0){ errors.push('Unclosed [ in "'+s+'"'); return d; }
+    splitTop(s.slice(i+1, e), ',').forEach(c=>{
+      const m = c.match(/^\s*([A-Za-z]+)\s*:\s*([\s\S]*)$/);
+      if(m){
+        const k = m[1].toUpperCase();
+        if(!CMT_KEYS.includes(k)) errors.push('Unknown comment keyword "'+m[1]+'"');
+        d.comments.push({key:k, val:m[2].trim()});
+      } else if(c.trim()) d.comments.push({key:'NOTE', val:c.trim()});
+    });
+    i = e + 1;
+  }
+  if(i < s.length) errors.push('Trailing "'+s.slice(i)+'" in "'+s+'"');
+  return d;
+}
+
+function parseAbML(src){
+  const errors = [];
+  const clean = (src||'').replace(/\s+/g,' ').trim();
+  if(!clean) return {chains:[], errors, byId:new Map()};
+  const chains = splitTop(clean,'|')
+    .map(cs => splitTop(cs,'-').map(t=>parseDomain(t, errors)).filter(Boolean))
+    .filter(c => c.length);
+  chains.forEach((c,ci)=>c.forEach((d,di)=>{ d.ci=ci; d.di=di; }));
+  const byId = new Map();
+  chains.flat().forEach(d=>{
+    if(d.id!=null){ if(byId.has(d.id)) errors.push('Duplicate domain id '+d.id); byId.set(d.id,d); }
+  });
+  chains.flat().forEach(d=>{
+    d.pd = d.partners.map(p=>{
+      const t = byId.get(p);
+      if(!t) errors.push('Domain '+(d.id??'?')+' points at missing id '+p);
+      return t;
+    }).filter(Boolean);
+  });
+  return {chains, errors, byId};
+}
+
+function writeAbML(chains){
+  return chains.map(c => c.map(d=>{
+    let s = d.type + d.mods.join('');
+    if(d.spec) s += '.' + d.spec;
+    if(d.id != null) s += '(' + d.id + (d.partners.length ? ':' + d.partners.join(',') : '') + ')';
+    if(d.ss) s += '{' + d.ss + '}';
+    if(d.comments.length) s += '[' + d.comments.map(c2=>c2.key+':'+c2.val).join(',') + ']';
+    return s;
+  }).join('-')).join(' | ');
+}
+
+/* ============================================================
+   Layout — assign every non-connector domain an (x, y, rotation)
+   ============================================================ */
+const GEO = {rx:13, ry:18, step:32, slot:26, armStart:34, stemTop:34};
+
+function findCore(chains){
+  const flat = chains.flat();
+  for(const d of flat) if(d.type==='H')
+    for(const p of d.pd) if(p.type==='H' && p.ci!==d.ci) return {kind:'hinge', a:d, b:p};
+  for(const T of ['CH2','CH3','CH4']) for(const d of flat) if(d.type===T)
+    for(const p of d.pd) if(p.type===T && p.ci!==d.ci) return {kind:'fc', a:d, b:p};
+  return null;
+}
+
+function layout(parsed, opt){
+  const chains = parsed.chains;
+  const nodes = [], conns = [], bonds = [];
+  if(!chains.length) return {nodes, conns, bonds, topo:'empty'};
+
+  const A = (opt.armAngle||30) * Math.PI/180;
+  const dir  = [{x:-Math.sin(A), y:-Math.cos(A)}, {x:Math.sin(A), y:-Math.cos(A)}];
+  const perp = [{x:-Math.cos(A), y: Math.sin(A)}, {x:Math.cos(A), y: Math.sin(A)}]; // outward
+  const rot  = [-(opt.armAngle||30), (opt.armAngle||30)];
+  const placed = new Set();
+  const put = (d, x, y, r, inX, side) => { d._x=x; d._y=y; d._r=r; d._inX=inX; d._slotSide=side||0; placed.add(d); nodes.push(d); };
+  const units = c => c.filter(d => !CONNECTOR.has(d.type));
+
+  const core = findCore(chains);
+  let topo = 'linear';
+
+  if(core){
+    topo = core.kind === 'hinge' ? 'Y (hinged)' : 'Y (Fc)';
+    const hIdx = [core.a.ci, core.b.ci];
+    const heavySet = new Set(hIdx);
+    const arms = [], stems = [];
+    hIdx.forEach((ci, side) => {
+      const chain = chains[ci];
+      const bi = chain.indexOf(side === 0 ? core.a : core.b);
+      arms[side]  = units(chain.slice(0, bi));
+      stems[side] = units(chain.slice(core.kind === 'hinge' ? bi+1 : bi));
+    });
+
+    /* --- Fc stem: paired columns for as long as the two chains really pair --- */
+    const fcish = x => x.type==='CH2'||x.type==='CH3'||x.type==='CH4'||x.type==='CH5';
+    let kB = 0;
+    while(kB < Math.max(stems[0].length, stems[1].length)){
+      const a = stems[0][kB], b = stems[1][kB];
+      const together = a && b && (a.pd.includes(b) || b.pd.includes(a) || (fcish(a) && fcish(b) && a.type===b.type));
+      if(together) kB++; else break;
+    }
+    for(let k=0; k<kB; k++){
+      const y = GEO.stemTop + k*GEO.step;
+      if(!placed.has(stems[0][k])) put(stems[0][k], -GEO.slot/2, y, 0, +GEO.rx, 0);
+      if(!placed.has(stems[1][k])) put(stems[1][k], +GEO.slot/2, y, 0, -GEO.rx, 1);
+    }
+    /* --- C-terminal fusions below the Fc: each chain's own tail, pairing within itself --- */
+    [0,1].forEach(side => {
+      const tail = stems[side].slice(kB);
+      if(!tail.length) return;
+      const baseX = (side === 0 ? -1 : 1) * GEO.slot * 1.55;
+      let y = GEO.stemTop + kB*GEO.step + (kB ? GEO.step*0.75 : 0);
+      tail.forEach(d => {
+        if(placed.has(d)) return;
+        const mate = d.pd.find(p => p !== d && !placed.has(p));
+        if(mate){
+          put(d,    baseX - GEO.slot/2, y, 0, +GEO.rx, 0);
+          put(mate, baseX + GEO.slot/2, y, 0, -GEO.rx, 1);
+        } else put(d, baseX, y, 0, +GEO.rx, 0);
+        y += GEO.step;
+      });
+    });
+
+    /* --- arms: heavy chain on the limb axis, its partner one slot outboard --- */
+    const armStart = Math.max(GEO.armStart, 15.5 / Math.max(0.17, Math.sin(A)));
+    [0,1].forEach(side => {
+      const seq = arms[side].slice().reverse();
+      const sgn = side === 0 ? -1 : 1;                // local +x of the inboard face
+      let rung = 0;
+      seq.forEach(d => {
+        if(placed.has(d)) return;                     // already drawn as someone's partner
+        const t = armStart + rung*GEO.step;
+        const cx = dir[side].x * t, cy = dir[side].y * t;
+        put(d, cx, cy, rot[side], GEO.rx * sgn, 0);
+        const mate = d.pd.find(p => p !== d && !placed.has(p) && !(p.ci !== d.ci && heavySet.has(p.ci)));
+        if(mate) put(mate, cx + perp[side].x*GEO.slot, cy + perp[side].y*GEO.slot, rot[side], -GEO.rx * sgn, 1);
+        rung++;
+      });
+    });
+  }
+
+  /* --- everything still unplaced: stack remaining chains as columns --- */
+  const leftovers = chains.map(c => units(c).filter(d => !placed.has(d))).filter(c => c.length);
+  if(leftovers.length){
+    if(!core) topo = leftovers.length > 1 ? 'paired chains' : 'single chain';
+    /* group leftover chains that pair with each other */
+    const used = new Set(); const groups = [];
+    leftovers.forEach((c, i) => {
+      if(used.has(i)) return;
+      const g = [c]; used.add(i);
+      leftovers.forEach((c2, j) => {
+        if(used.has(j)) return;
+        if(c.some(d => d.pd.some(p => c2.includes(p)))){ g.push(c2); used.add(j); }
+      });
+      groups.push(g);
+    });
+    /* place each group as its own column block, to the right of whatever exists */
+    let originX = 0, originY = 0;
+    if(nodes.length){
+      const mx = Math.max(...nodes.map(n=>n._x));
+      const my = Math.max(...nodes.map(n=>n._y));
+      originX = mx + GEO.slot*2.2; originY = -GEO.ry;
+    }
+    groups.forEach(g => {
+      const primary = g[0], second = g[1] || [];
+      const seen = new Set();
+      let k = 0;
+      primary.forEach(d => {
+        if(placed.has(d)) return;
+        const y = originY + k*GEO.step;
+        const mate = d.pd.find(p => p !== d && !placed.has(p) && (second.includes(p) || p.ci === d.ci));
+        if(mate){
+          put(d,    originX - GEO.slot/2, y, 0, +GEO.rx, 0);
+          put(mate, originX + GEO.slot/2, y, 0, -GEO.rx, 1);
+        } else {
+          put(d, originX, y, 0, +GEO.rx, 0);
+        }
+        seen.add(d); k++;
+      });
+      /* any domain in this group still unplaced goes below, single file */
+      g.flat().forEach(d => { if(!placed.has(d)){ put(d, originX, originY + k*GEO.step, 0, +GEO.rx, 0); k++; } });
+      originX += GEO.slot*3.2;
+    });
+  }
+
+  /* --- connectors: hinge, linkers, long peptide bonds --- */
+  chains.forEach(chain => {
+    for(let i=0;i<chain.length;i++){
+      const d = chain[i];
+      if(!CONNECTOR.has(d.type)) continue;
+      let prev=null, next=null;
+      for(let j=i-1;j>=0;j--) if(placed.has(chain[j])){ prev=chain[j]; break; }
+      for(let j=i+1;j<chain.length;j++) if(placed.has(chain[j])){ next=chain[j]; break; }
+      if(prev && next) conns.push({kind:d.type==='H'?'hinge':'linker', a:prev, b:next, d});
+    }
+    /* peptide bonds between placed neighbours that ended up far apart */
+    const seq = chain.filter(d=>placed.has(d));
+    for(let i=0;i+1<seq.length;i++){
+      const a=seq[i], b=seq[i+1];
+      const gap = Math.hypot(a._x-b._x, a._y-b._y);
+      const between = chain.slice(chain.indexOf(a)+1, chain.indexOf(b)).some(d=>CONNECTOR.has(d.type));
+      if(!between && gap > GEO.step*1.25) conns.push({kind:'pep', a, b});
+    }
+  });
+
+  /* --- disulfides between side-by-side partners --- */
+  const done = new Set();
+  nodes.forEach(d => {
+    if(!d.ss) return;
+    d.pd.forEach(p => {
+      if(!placed.has(p)) return;
+      if(Math.hypot(d._x-p._x, d._y-p._y) > GEO.slot*1.8) return;   // not actually side by side
+      const key = [Math.min(d.id,p.id), Math.max(d.id,p.id)].join('-');
+      if(done.has(key)) return; done.add(key);
+      bonds.push({a:d, b:p, n:d.ss});
+    });
+  });
+
+  /* hinge-pair disulfides, where the hinge itself carries {n} */
+  if(core && core.kind==='hinge' && core.a.ss){
+    const h = conns.filter(c=>c.kind==='hinge');
+    if(h.length>=2) bonds.push({hinge:true, n:core.a.ss, left:h[0], right:h[1]});
+  }
+  return {nodes, conns, bonds, topo, core};
+}
+
+/* ============================================================
+   Colour
+   ============================================================ */
+function chainSpec(chains, d){
+  const c = chains[d.ci] || [];
+  if(d.spec) return d.spec[0];
+  for(let i=d.di-1;i>=0;i--) if(c[i].spec) return c[i].spec[0];
+  for(let i=d.di+1;i<c.length;i++) if(c[i].spec) return c[i].spec[0];
+  return 'a';
+}
+function colorFor(d, chains, opt){
+  if(d.type==='X') return COL_X;
+  if(d.type==='C') return COL_C;
+  const pair = opt.pal[chainSpec(chains, d)] || opt.pal.a;
+  if(opt.tint === 'flat') return pair[0];
+  if(opt.tint === 'chain') return (d._slotSide === 1) ? pair[1] : pair[0];
+  return LIGHTSIDE.has(d.type) ? pair[1] : pair[0];
+}
+function readable(hex){
+  const h = hex.replace('#',''); 
+  const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
+  const lin = v => { v/=255; return v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); };
+  return (0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b)) > 0.42 ? '#000000' : '#FFFFFF';
+}
+
+/* ============================================================
+   SVG renderer
+   ============================================================ */
+const FIGFONT = "'Times New Roman', Times, serif";
+
+function nodeExtent(d, opt){
+  const t = (d._r||0)*Math.PI/180, rx=GEO.rx, ry=GEO.ry;
+  return {x: Math.hypot(rx*Math.cos(t), ry*Math.sin(t)), y: Math.hypot(rx*Math.sin(t), ry*Math.cos(t))};
+}
+
+function drawMods(d, opt, ink){
+  let s = '';
+  const inX = d._inX || GEO.rx, outX = -inX;
+  if(d.mods.includes('>')) s += `<circle cx="${f2(inX*1.02)}" cy="0" r="4.8" fill="${d._fill}" stroke="${ink}" stroke-width="${opt.lw}"/>`;
+  if(d.mods.includes('@')) s += `<circle cx="${f2(inX*0.56)}" cy="0" r="4.8" fill="${opt.bg||'#FFFFFF'}" stroke="${ink}" stroke-width="${opt.lw}"/>`;
+  const charge = d.mods.includes('+') ? '+' : d.mods.includes('_') ? '−' : '';
+  if(charge) s += `<text x="${f2(inX*0.5)}" y="0" font-size="11" font-family="${FIGFONT}" fill="${d._tx}" text-anchor="middle" dominant-baseline="central" transform="rotate(${f2(-(d._r||0))} ${f2(inX*0.5)} 0)">${charge}</text>`;
+  const rim = [];
+  if(d.mods.includes('*')) rim.push('∗');
+  if(d.mods.includes('^')) rim.push('◆');
+  if(d.mods.includes('!')) rim.push('✕');
+  rim.forEach((g, i) => {
+    const y = -GEO.ry*0.52 + i*10;
+    s += `<text x="${f2(outX*0.62)}" y="${f2(y)}" font-size="8.5" font-family="${FIGFONT}" fill="${d._tx}" text-anchor="middle" dominant-baseline="central" transform="rotate(${f2(-(d._r||0))} ${f2(outX*0.62)} ${f2(y)})">${g}</text>`;
+  });
+  return s;
+}
+
+/* Builds one molecule as an SVG fragment plus its bounding box. */
+function buildFigure(abml, opt){
+  const parsed = parseAbML(abml);
+  const L = layout(parsed, opt);
+  const ink = opt.ink, lw = opt.lw;
+  if(!L.nodes.length) return {body:'', box:{x0:0,y0:0,x1:1,y1:1}, parsed, L};
+
+  L.nodes.forEach(d => { d._fill = colorFor(d, parsed.chains, opt); d._tx = readable(d._fill); });
+
+  let under = '', over = '', marks = '';
+
+  /* connectors beneath the domains */
+  L.conns.forEach(c => {
+    const {a,b} = c;
+    if(c.kind === 'linker'){
+      const mx=(a._x+b._x)/2, my=(a._y+b._y)/2;
+      const nx=-(b._y-a._y), ny=(b._x-a._x), len=Math.hypot(nx,ny)||1;
+      const bow = Math.min(16, Math.hypot(b._x-a._x, b._y-a._y)*0.38);
+      under += `<path d="M ${f2(a._x)} ${f2(a._y)} Q ${f2(mx+nx/len*bow)} ${f2(my+ny/len*bow)} ${f2(b._x)} ${f2(b._y)}" fill="none" stroke="${ink}" stroke-width="${lw}" stroke-linecap="round"/>`;
+      if(opt.linkLabel){
+        const lx=mx+nx/len*bow*0.9, ly=my+ny/len*bow*0.9;
+        marks += `<text x="${f2(lx)}" y="${f2(ly-4)}" font-size="8" font-family="${FIGFONT}" fill="${ink}" text-anchor="middle">L${c.d.comments.find(k=>k.key==='LENGTH')?' '+c.d.comments.find(k=>k.key==='LENGTH').val:''}</text>`;
+      }
+    } else {
+      under += `<line x1="${f2(a._x)}" y1="${f2(a._y)}" x2="${f2(b._x)}" y2="${f2(b._y)}" stroke="${ink}" stroke-width="${c.kind==='hinge'?lw*1.25:lw}" stroke-linecap="round"${opt.arrows?' marker-end="url(#ncArrow)"':''}/>`;
+      if(c.kind==='hinge' && opt.hingeLabel)
+        marks += `<text x="${f2((a._x+b._x)/2 - 11)}" y="${f2((a._y+b._y)/2)}" font-size="8.5" font-family="${FIGFONT}" fill="${ink}" text-anchor="middle">H</text>`;
+    }
+  });
+
+  /* disulfides */
+  if(opt.ss) L.bonds.forEach(bd => {
+    if(bd.hinge){
+      const l = bd.left, r = bd.right;
+      const lmx=(l.a._x+l.b._x)/2, lmy=(l.a._y+l.b._y)/2;
+      const rmx=(r.a._x+r.b._x)/2, rmy=(r.a._y+r.b._y)/2;
+      for(let i=0;i<Math.min(bd.n,3);i++){
+        const o = (i-(Math.min(bd.n,3)-1)/2)*6;
+        under += `<line x1="${f2(lmx)}" y1="${f2(lmy+o-3)}" x2="${f2(rmx)}" y2="${f2(rmy+o+3)}" stroke="#D11A1A" stroke-width="${lw}" stroke-linecap="round"/>`;
+        under += `<line x1="${f2(lmx)}" y1="${f2(lmy+o+3)}" x2="${f2(rmx)}" y2="${f2(rmy+o-3)}" stroke="#D11A1A" stroke-width="${lw}" stroke-linecap="round"/>`;
+      }
+      return;
+    }
+    const {a,b,n} = bd;
+    const dx=b._x-a._x, dy=b._y-a._y, len=Math.hypot(dx,dy)||1;
+    const mx=(a._x+b._x)/2, my=(a._y+b._y)/2;
+    const px=-dy/len, py=dx/len;
+    for(let i=0;i<Math.min(n,3);i++){
+      const o=(i-(Math.min(n,3)-1)/2)*7;
+      over += `<line x1="${f2(mx+px*o-dx/len*5)}" y1="${f2(my+py*o-dy/len*5)}" x2="${f2(mx+px*o+dx/len*5)}" y2="${f2(my+py*o+dy/len*5)}" stroke="#D11A1A" stroke-width="${f2(lw*1.1)}" stroke-linecap="round"/>`;
+    }
+  });
+
+  /* domains */
+  let doms = '';
+  L.nodes.forEach(d => {
+    const lbl = opt.labels ? (d.type + (opt.showSpec && d.spec ? d.spec : '')) : '';
+    const size = lbl.length >= 4 ? 8 : lbl.length === 3 ? 9 : 10;
+    doms += `<g transform="translate(${f2(d._x)},${f2(d._y)}) rotate(${f2(d._r||0)})">`
+      + `<ellipse rx="${GEO.rx}" ry="${GEO.ry}" fill="${d._fill}" stroke="${ink}" stroke-width="${lw}"/>`
+      + drawMods(d, opt, ink)
+      + (lbl ? (() => { const sh = (d.mods.includes('>')||d.mods.includes('@')) ? -(d._inX||GEO.rx)*0.46 : 0;
+          return `<text x="${f2(sh)}" y="0" font-size="${size}" font-family="${FIGFONT}" fill="${d._tx}" text-anchor="middle" dominant-baseline="central" transform="rotate(${f2(-(d._r||0))} ${f2(sh)} 0)">${esc(lbl)}</text>`; })() : '')
+      + `</g>`;
+    if(opt.ids && d.id != null){
+      const ex = nodeExtent(d, opt);
+      marks += `<text x="${f2(d._x + (d._inX>0 ? -ex.x-4 : ex.x+4))}" y="${f2(d._y)}" font-size="7.5" font-family="${FIGFONT}" fill="${ink}" text-anchor="${d._inX>0?'end':'start'}" dominant-baseline="central">${d.id}</text>`;
+    }
+  });
+
+  /* bounding box */
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  L.nodes.forEach(d => {
+    const e = nodeExtent(d, opt);
+    x0=Math.min(x0,d._x-e.x-8); x1=Math.max(x1,d._x+e.x+8);
+    y0=Math.min(y0,d._y-e.y-8); y1=Math.max(y1,d._y+e.y+8);
+  });
+  return {body: under + doms + over + marks, box:{x0,y0,x1,y1}, parsed, L};
+}
+
+function commentLines(parsed){
+  const out = [];
+  parsed.chains.flat().forEach(d => d.comments.forEach(c => {
+    out.push((d.type + (d.spec?'.'+d.spec:'') + (d.id!=null?' '+d.id:'')) + '  ' + c.key + ': ' + c.val);
+  }));
+  return out;
+}
+
+function svgDocument(inner, w, h, opt){
+  const defs = opt.arrows ? `<defs><marker id="ncArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="${opt.ink}"/></marker></defs>` : '';
+  const bg = opt.bg ? `<rect x="0" y="0" width="${f2(w)}" height="${f2(h)}" fill="${opt.bg}"/>` : '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${f2(w)}" height="${f2(h)}" viewBox="0 0 ${f2(w)} ${f2(h)}">${defs}${bg}${inner}</svg>`;
+}
+
+/* single molecule, optionally with its comment column */
+function renderOne(abml, opt){
+  const fig = buildFigure(abml, opt);
+  if(!fig.body) return {svg: svgDocument('', 10, 10, opt), parsed: fig.parsed, L: fig.L};
+  const b = fig.box, k = opt.scale;
+  const lines = opt.notes ? commentLines(fig.parsed) : [];
+  const noteW = lines.length ? 190 : 0;
+  const w = (b.x1-b.x0)*k + noteW, h = Math.max((b.y1-b.y0)*k, lines.length*15+12);
+  let inner = `<g transform="translate(${f2(-b.x0*k)},${f2(-b.y0*k)}) scale(${f2(k)})">${fig.body}</g>`;
+  if(lines.length){
+    const x = (b.x1-b.x0)*k + 14;
+    inner += lines.map((t,i)=>`<text x="${f2(x)}" y="${f2(16+i*15)}" font-size="11" font-family="${FIGFONT}" fill="${opt.ink}">${esc(t)}</text>`).join('');
+  }
+  return {svg: svgDocument(inner, w, h, opt), parsed: fig.parsed, L: fig.L};
+}
+
+/* lettered multi-panel grid */
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+function renderPanels(panels, opt, cols){
+  const o = Object.assign({}, opt, {notes:false});
+  const figs = panels.map(p => buildFigure(p.abml, o)).filter(f => f.body);
+  if(!figs.length) return svgDocument('', 10, 10, opt);
+  const k = opt.scale;
+  const cw = Math.max(...figs.map(f => (f.box.x1-f.box.x0)*k)) + 26;
+  const ch = Math.max(...figs.map(f => (f.box.y1-f.box.y0)*k)) + 34;
+  const n = figs.length, C = Math.max(1, Math.min(cols, n)), R = Math.ceil(n/C);
+  let inner = '';
+  figs.forEach((fg, i) => {
+    const r = Math.floor(i/C), c = i%C;
+    const ox = c*cw, oy = r*ch;
+    const fw = (fg.box.x1-fg.box.x0)*k;
+    const padX = ox + (cw - fw)/2;
+    inner += `<text x="${f2(ox+8)}" y="${f2(oy+17)}" font-size="15" font-weight="bold" font-family="${FIGFONT}" fill="${opt.ink}">${LETTERS[i]||'?'}</text>`;
+    inner += `<g transform="translate(${f2(padX - fg.box.x0*k)},${f2(oy+24 - fg.box.y0*k)}) scale(${f2(k)})">${fg.body}</g>`;
+  });
+  return svgDocument(inner, C*cw, R*ch, opt);
+}
+
+/* ============================================================
+   App state + UI
+   ============================================================ */
+const S = {
+  abml: byName('Knob-into-hole').abml,
+  pal: Object.assign({}, PALETTES.aureka),
+  panels: [],
+  current: 'Knob-into-hole',
+  lastSVG: ''
+};
+
+function opts(){
+  return {
+    pal: S.pal,
+    tint: $('#oTint').value,
+    labels: $('#oLabels').checked,
+    showSpec: $('#oSpec').checked,
+    hingeLabel: $('#oHinge').checked,
+    linkLabel: $('#oLink').checked,
+    ids: $('#oIds').checked,
+    notes: $('#oNotes').checked,
+    ss: $('#oSS').checked,
+    arrows: $('#oArrow').checked,
+    lw: parseFloat($('#oLw').value),
+    armAngle: parseFloat($('#oAngle').value),
+    scale: parseFloat($('#oScale').value),
+    bg: $('#oBg').checked ? '#FFFFFF' : null,
+    ink: '#000000'
+  };
+}
+
+let toastT = null;
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastT); toastT = setTimeout(()=>{ t.hidden = true; }, 2300);
+}
+
+function draw(){
+  const o = opts();
+  const usePanels = $('#oPanOn').checked && S.panels.length;
+  let svg, parsed, L;
+  if(usePanels){
+    svg = renderPanels(S.panels, o, parseInt($('#oCols').value,10)||4);
+    parsed = parseAbML(S.abml); L = layout(parsed, o);
+  } else {
+    const r = renderOne(S.abml, o); svg = r.svg; parsed = r.parsed; L = r.L;
+  }
+  S.lastSVG = svg;
+  $('#paper').innerHTML = svg;
+  $('#paper').classList.toggle('solid', !!o.bg);
+
+  const st = $('#sStatus');
+  if(!S.abml.trim()){ st.textContent=''; st.className='status'; }
+  else if(parsed.errors.length){ st.textContent = parsed.errors.length + ' issue' + (parsed.errors.length>1?'s':''); st.className='status bad'; }
+  else { st.textContent = 'valid'; st.className='status ok'; }
+  $('#sNotes').textContent = parsed.errors.slice(0,6).join('\n');
+
+  const cur = S.current ? byName(S.current) : null;
+  $('#sName').textContent = cur ? cur.name : 'Custom';
+  $('#sDesc').textContent = cur ? cur.description : 'edited by hand';
+  const nD = parsed.chains.flat().length;
+  $('#sTopo').textContent = usePanels
+    ? S.panels.length + ' panel' + (S.panels.length>1?'s':'')
+    : (L.topo === 'empty' ? 'nothing to draw' : L.topo);
+  $('#sCount').textContent = usePanels ? '' :
+    parsed.chains.length + ' chain' + (parsed.chains.length===1?'':'s') + ' · ' + nD + ' domain' + (nD===1?'':'s');
+
+  buildChainUI(parsed);
+}
+
+/* ---------- format library ---------- */
+function loadFormat(name, setHash){
+  const f = byName(name); if(!f) return false;
+  S.current = name; S.abml = f.abml; $('#abml').value = f.abml;
+  if(setHash !== false){ try { location.hash = slug(name); } catch(e){} }
+  buildLibrary($('#libSearch').value); draw(); return true;
+}
+
+function buildLibrary(filter){
+  const q = (filter||'').toLowerCase().trim();
+  const host = $('#libList'); host.innerHTML = '';
+  const hits = LIBRARY.filter(f => !q || f.name.toLowerCase().includes(q)
+    || f.category.toLowerCase().includes(q) || f.description.toLowerCase().includes(q));
+  let cat = null;
+  hits.forEach(f => {
+    if(f.category !== cat){
+      cat = f.category;
+      const h = document.createElement('h4'); h.className = 'libcat'; h.textContent = cat;
+      host.appendChild(h);
+    }
+    const b = document.createElement('button');
+    b.textContent = f.name; b.title = f.description;
+    b.setAttribute('aria-current', String(f.name === S.current));
+    b.onclick = () => loadFormat(f.name);
+    host.appendChild(b);
+  });
+  if(!hits.length) host.innerHTML = '<p class="hint">No format matches that.</p>';
+}
+
+/* ---------- chain builder ---------- */
+function buildChainUI(parsed){
+  const host = $('#chainList'); host.innerHTML = '';
+  const sel = $('#addChain'); const keep = sel.value;
+  sel.innerHTML = parsed.chains.map((c,i)=>`<option value="${i}">End of chain ${i+1}</option>`).join('')
+    || '<option value="0">Chain 1</option>';
+  if(keep && keep < parsed.chains.length) sel.value = keep;
+
+  parsed.chains.forEach((c, ci) => {
+    const box = document.createElement('div'); box.className = 'chain';
+    const hd = document.createElement('header');
+    hd.innerHTML = `<span>Chain ${ci+1}</span><span class="sp"></span>`;
+    const del = document.createElement('button'); del.textContent = '×'; del.title = 'Delete chain';
+    del.onclick = () => { const p = parseAbML(S.abml); p.chains.splice(ci,1); commit(p.chains); };
+    hd.appendChild(del); box.appendChild(hd);
+    const doms = document.createElement('div'); doms.className = 'doms';
+    c.forEach((d, di) => {
+      const chip = document.createElement('span'); chip.className = 'dchip';
+      const sw = document.createElement('span'); sw.className = 'swatch';
+      sw.style.background = CONNECTOR.has(d.type) ? 'transparent' : colorFor(d, parsed.chains, opts());
+      if(CONNECTOR.has(d.type)) sw.style.borderStyle = 'dashed';
+      chip.appendChild(sw);
+      chip.appendChild(document.createTextNode(d.type + d.mods.join('') + (d.spec ? '.'+d.spec : '')));
+      const x = document.createElement('button'); x.textContent = '×'; x.title = 'Remove domain';
+      x.onclick = () => { const p = parseAbML(S.abml); p.chains[ci].splice(di,1); if(!p.chains[ci].length) p.chains.splice(ci,1); commit(p.chains); };
+      chip.appendChild(x); doms.appendChild(chip);
+    });
+    if(!c.length) doms.innerHTML = '<span class="hint">empty</span>';
+    box.appendChild(doms); host.appendChild(box);
+  });
+  if(!parsed.chains.length) host.innerHTML = '<p class="hint">No chains yet — add a domain to start one.</p>';
+}
+
+function commit(chains){
+  S.abml = writeAbML(chains);
+  $('#abml').value = S.abml;
+  S.current = null; buildLibrary($('#libSearch').value);
+  draw();
+}
+
+/* renumber every domain left to right, then pair by architecture */
+function renumberAndPair(){
+  const p = parseAbML(S.abml);
+  if(!p.chains.length) return;
+  let n = 1;
+  p.chains.forEach(c => c.forEach(d => { d.id = n++; d.partners = []; }));
+  const isHeavy = c => c.some(d => d.type==='H' || d.type==='CH2' || d.type==='CH3');
+  const heavies = [], lights = [];
+  p.chains.forEach(c => (isHeavy(c) ? heavies : lights).push(c));
+  const link = (a,b) => { if(!a||!b) return; if(!a.partners.includes(b.id)) a.partners.push(b.id); if(!b.partners.includes(a.id)) b.partners.push(a.id); };
+
+  if(heavies.length === 2){
+    const br = heavies.map(c => { const i = c.findIndex(d => d.type==='H'); return i >= 0 ? i : c.findIndex(d => d.type==='CH2'); });
+    if(br[0] >= 0 && br[1] >= 0){
+      /* hinge / Fc: pair positionally outward from the branch point */
+      for(let k=0; br[0]+k < heavies[0].length && br[1]+k < heavies[1].length; k++)
+        link(heavies[0][br[0]+k], heavies[1][br[1]+k]);
+      /* arms pair with their light chain, N-terminal index first */
+      heavies.forEach((h, hi) => {
+        const arm = h.slice(0, br[hi]);
+        const lc = lights[hi];
+        if(lc) arm.forEach((d, j) => link(d, lc[j]));
+      });
+    }
+  } else {
+    /* no Fc: pair chains two at a time, index for index */
+    for(let i=0; i+1 < p.chains.length; i += 2)
+      p.chains[i].forEach((d, j) => link(d, p.chains[i+1][j]));
+    if(p.chains.length === 1){
+      /* single chain: pair the first V with the last V (scFv-style) */
+      const vs = p.chains[0].filter(d => d.type[0]==='V');
+      for(let i=0, j=vs.length-1; i<j; i++, j--) link(vs[i], vs[j]);
+    }
+  }
+  commit(p.chains);
+  toast('Renumbered and re-paired');
+}
+
+/* ---------- palette editor ---------- */
+function buildPalette(){
+  const host = $('#palList'); host.innerHTML = '';
+  'abcdefgh'.split('').forEach(k => {
+    const row = document.createElement('div'); row.className = 'row';
+    const lab = document.createElement('label'); lab.textContent = '.' + k;
+    lab.style.flex = '0 0 22px'; lab.style.fontFamily = 'var(--f-mono)';
+    row.appendChild(lab);
+    [0,1].forEach(slot => {
+      const inp = document.createElement('input'); inp.type = 'color'; inp.value = S.pal[k][slot];
+      inp.title = slot ? 'light-chain domains' : 'heavy-chain domains';
+      inp.oninput = () => { S.pal[k][slot] = inp.value; draw(); };
+      row.appendChild(inp);
+    });
+    const tag = document.createElement('span'); tag.className = 'hint';
+    tag.textContent = k==='a' ? 'lead' : k==='b' ? 'benchmark' : k==='c' ? 'control' : '';
+    row.appendChild(tag);
+    host.appendChild(row);
+  });
+}
+
+/* ---------- panels ---------- */
+function buildPanels(){
+  const host = $('#panList'); host.innerHTML = '';
+  S.panels.forEach((p, i) => {
+    const row = document.createElement('div'); row.className = 'panelrow';
+    const tag = document.createElement('strong'); tag.textContent = LETTERS[i] || '?';
+    tag.style.flex = '0 0 14px';
+    const inp = document.createElement('input'); inp.type = 'text'; inp.value = p.abml;
+    inp.oninput = () => { p.abml = inp.value; draw(); };
+    const use = document.createElement('button'); use.className='btn'; use.textContent='↑';
+    use.title = 'Load into editor'; use.style.padding='3px 7px';
+    use.onclick = () => { S.abml = p.abml; $('#abml').value = p.abml; draw(); };
+    const x = document.createElement('button'); x.className='btn'; x.textContent='×';
+    x.style.padding='3px 7px';
+    x.onclick = () => { S.panels.splice(i,1); buildPanels(); draw(); };
+    row.append(tag, inp, use, x); host.appendChild(row);
+  });
+  if(!S.panels.length) host.innerHTML = '<p class="hint">Empty. Load a format, then “Add current”.</p>';
+}
+
+/* ---------- export ---------- */
+async function saveFile(filename, data){
+  let dl = null;
+  try { dl = await window.claude?.use?.('downloads'); } catch(e){}
+  if(dl){
+    try { await dl.save({filename, data}); toast('Saved ' + filename); return; }
+    catch(err){
+      if(err && err.code === 'declined') return;
+      /* fall through to clipboard */
+    }
+  }
+  if(!window.claude){                      // standalone copy: ordinary browser download
+    try {
+      const blob = data instanceof Blob ? data : new Blob([data], {type:'image/svg+xml;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      toast('Saved ' + filename); return;
+    } catch(e){}
+  }
+  if(typeof data === 'string'){
+    try { await navigator.clipboard.writeText(data); toast('Download unavailable here — SVG copied to clipboard'); return; } catch(e){}
+  }
+  toast('Could not save in this view');
+}
+
+function pngFromSVG(svgText, scale){
+  return new Promise((res, rej) => {
+    const m = svgText.match(/width="([\d.]+)" height="([\d.]+)"/);
+    const w = Math.max(1, Math.round(parseFloat(m?m[1]:400) * scale));
+    const h = Math.max(1, Math.round(parseFloat(m?m[2]:400) * scale));
+    const blob = new Blob([svgText], {type:'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      const cx = cv.getContext('2d');
+      cx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      cv.toBlob(b => b ? res(b) : rej(new Error('encode failed')), 'image/png');
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('render failed')); };
+    img.src = url;
+  });
+}
+
+function fileStem(){
+  const base = ($('#oPanOn').checked && S.panels.length) ? 'antibody-panels' : (S.current || 'antibody-format');
+  return base.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || 'antibody-format';
+}
+
+/* ============================================================
+   Wiring
+   ============================================================ */
+(function init(){
+  /* tabs */
+  const tabs = [...document.querySelectorAll('.tab')];
+  tabs.forEach(t => t.onclick = () => {
+    tabs.forEach(o => {
+      const on = o === t;
+      o.setAttribute('aria-selected', String(on));
+      document.getElementById(o.getAttribute('aria-controls')).hidden = !on;
+    });
+  });
+
+  /* add-domain controls */
+  const groups = [
+    ['Immunoglobulin', ['VH','VL','CH1','CL','CH2','CH3','CH4','CH5','VHH']],
+    ['T-cell receptor', ['VA','CA','VB','CB','VG','CG','VD','CD']],
+    ['Other',           ['X','C']],
+    ['Connectors',      ['H','L']]
+  ];
+  $('#addType').innerHTML = groups.map(([g, list]) =>
+    `<optgroup label="${g}">` + list.map(t=>`<option value="${t}">${t}</option>`).join('') + `</optgroup>`).join('');
+  $('#addSpec').innerHTML = '<option value="">—</option>' + 'abcdefgh'.split('').map(c=>`<option value="${c}">.${c}</option>`).join('');
+  $('#addMods').innerHTML = MODCH.split('').map(m =>
+    `<label class="ck" title="${MODNAME[m]}" style="flex:0 0 auto"><input type="checkbox" data-mod="${m}"><span style="font-family:var(--f-mono)">${m==='_'?'_':m}</span></label>`).join('');
+
+  $('#bAddDom').onclick = () => {
+    const p = parseAbML(S.abml);
+    const ci = Math.min(parseInt($('#addChain').value,10)||0, Math.max(0, p.chains.length-1));
+    const mods = [...document.querySelectorAll('#addMods input:checked')].map(i=>i.dataset.mod);
+    const d = {type:$('#addType').value, mods, spec:$('#addSpec').value, id:null, partners:[], ss:0, comments:[]};
+    if(!p.chains.length) p.chains.push([]);
+    p.chains[ci].push(d);
+    commit(p.chains);
+  };
+  $('#bAddChain').onclick = () => {
+    const p = parseAbML(S.abml);
+    p.chains.push([{type:'VH', mods:[], spec:'a', id:null, partners:[], ss:0, comments:[]}]);
+    commit(p.chains);
+  };
+  $('#bRenumber').onclick = renumberAndPair;
+
+  /* library */
+  $('#libSearch').oninput = e => buildLibrary(e.target.value);
+
+  /* abml editor */
+  let t = null;
+  $('#abml').addEventListener('input', e => {
+    S.abml = e.target.value; S.current = null;
+    clearTimeout(t); t = setTimeout(() => { buildLibrary($('#libSearch').value); draw(); }, 160);
+  });
+  $('#bClear').onclick = () => { S.abml=''; $('#abml').value=''; S.current=null; buildLibrary($('#libSearch').value); draw(); };
+
+  /* style controls */
+  ['oLabels','oSpec','oHinge','oLink','oIds','oNotes','oSS','oArrow','oBg','oTint','oPanOn','oCols']
+    .forEach(id => $('#'+id).addEventListener('change', draw));
+  const ranges = {oLw:['#oLwV', v=>v], oAngle:['#oAngleV', v=>v+'°'], oScale:['#oScaleV', v=>v+'×']};
+  Object.entries(ranges).forEach(([id,[out,fmt]]) => {
+    $('#'+id).addEventListener('input', e => { $(out).textContent = fmt(e.target.value); draw(); });
+  });
+  $('#bPal').onclick = () => {
+    const p = PALETTES[$('#palPreset').value];
+    S.pal = JSON.parse(JSON.stringify(p));
+    buildPalette(); draw(); toast('Palette applied');
+  };
+
+  /* panels */
+  $('#bPanAdd').onclick = () => {
+    if(!S.abml.trim()) return toast('Nothing in the editor');
+    if(S.panels.length >= 26) return toast('26 panels is the limit');
+    S.panels.push({abml:S.abml}); buildPanels();
+    if(!$('#oPanOn').checked) $('#oPanOn').checked = true;
+    draw();
+  };
+  $('#bPanClear').onclick = () => { S.panels = []; $('#oPanOn').checked = false; buildPanels(); draw(); };
+
+  /* export */
+  $('#bSvg').onclick = () => saveFile(fileStem() + '.svg', S.lastSVG);
+  $('#bPng').onclick = async () => {
+    try { const b = await pngFromSVG(S.lastSVG, 3); await saveFile(fileStem() + '.png', b); }
+    catch(e){ toast('Could not render PNG'); }
+  };
+  $('#bCopySvg').onclick = async () => {
+    try { await navigator.clipboard.writeText(S.lastSVG); toast('SVG markup copied'); }
+    catch(e){ toast('Clipboard unavailable here'); }
+  };
+  $('#bCopy').onclick = async () => {
+    try { await navigator.clipboard.writeText(S.abml); toast('AbML copied'); }
+    catch(e){ $('#abml').select(); toast('Press ⌘C / Ctrl-C to copy'); }
+  };
+
+  /* deep link: #crossmab-ch1-cl opens that format */
+  const fromHash = () => {
+    const k = (location.hash || '').replace(/^#/, '');
+    return k ? LIBRARY.find(f => slug(f.name) === k) : null;
+  };
+  const hit = fromHash();
+  if(hit){ S.current = hit.name; S.abml = hit.abml; }
+  window.addEventListener('hashchange', () => {
+    const f = fromHash();
+    if(f && f.name !== S.current) loadFormat(f.name, false);
+  });
+
+  /* go */
+  $('#abml').value = S.abml;
+  buildLibrary(''); buildPalette(); buildPanels(); draw();
+})();
+</script>
+
+</body>
+</html>

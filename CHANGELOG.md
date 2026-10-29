@@ -4,6 +4,33 @@ Notable changes to Aureka AbDraw. This project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html), and the format of this file
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.0] — 2026-10-29
+
+The drawing logic is now a module of its own, with tests that pin down the corrections so
+they cannot quietly regress. No change to how any format renders.
+
+### Changed
+
+- **`src/engine.js` holds the parser, layout engine and renderer.** It touches no DOM and has
+  no dependencies, so it runs in a browser as a plain script and under Node through `require()`.
+  `src/ui.js` and `src/shell.html` carry the interface; `tools/build_app.py` assembles the
+  single self-contained file from them and from `formats.json`.
+- **The gallery renders without a browser.** `tools/render_gallery.js` calls the engine directly
+  instead of driving Playwright, so a full rebuild is a fraction of a second.
+- **One version number**, defined in the engine and written into the header at runtime.
+
+### Added
+
+- **`tests/engine.test.js`** — 19 checks, no dependencies, run with `node tests/engine.test.js`:
+  every format parses and places each domain exactly once; hinge bonds are horizontal parallel
+  rungs that cannot cross; the CH1–CL disulfide is off by default; linkers start at a
+  C-terminus and end at an N-terminus; linker-joined domains are spaced far enough to show the
+  connection; a declared length changes the curve but not its endpoints; a terminal hinge still
+  renders; a C-terminal clasp is not mistaken for an Fc hinge; the grammar rejects what the
+  specification forbids; AbML survives a parse/write round trip; exported SVG carries its
+  provenance; and every drawing fits its viewBox.
+- `defaultOptions()` on the engine, so callers get a complete option set without assembling one.
+
 ## [1.1.0] — 2026-10-29
 
 Drawing corrections from review by Mandy, who checked the output against how these molecules

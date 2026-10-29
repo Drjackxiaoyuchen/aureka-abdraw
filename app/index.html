@@ -135,7 +135,7 @@ table.ref tr:last-child td{border-bottom:0}
 
 <div class="app">
   <div class="bar">
-    <h1 class="brand">Aureka AbDraw<small>AbML → figure · v1.1.0</small></h1>
+    <h1 class="brand">Aureka AbDraw<small>AbML → figure · <span id="ver"></span></small></h1>
     <span class="sp"></span>
     <button class="btn" id="bCopy">Copy AbML</button>
     <button class="btn" id="bCopySvg">Copy SVG</button>
@@ -318,42 +318,10 @@ table.ref tr:last-child td{border-bottom:0}
 </div>
 <div class="toast" id="toast" hidden></div>
 
+
 <script>
 "use strict";
-/* ============================================================
-   Aureka AbDraw — AbML v1.06 parser + schematic renderer
-   AbML grammar: Sweet-Jones, Ahmad & Martin, mAbs 2022 (abYdraw, GPL-3.0)
-   ============================================================ */
-
-/* ---------- grammar tables ---------- */
-const VERSION = '1.1.0';
-const DTYPES = ['VHH','CH1','CH2','CH3','CH4','CH5','VH','VL','CL','VA','VB','VG','VD','CA','CB','CG','CD','H','L','X','C'];
-const MODCH  = '*>@+_!^';
-const MODNAME = {'*':'general modification','>':'knob','@':'hole','+':'positive charge','_':'negative charge','!':'aglycosyl CH2','^':'ADC conjugation site'};
-const CONNECTOR = new Set(['H','L']);
-/* heavy-derived vs light-derived domain origin (drives the pale/dark tint) */
-const HEAVYSIDE = new Set(['VH','VHH','CH1','CH2','CH3','CH4','CH5','H','VA','CA','VG','CG']);
-const LIGHTSIDE = new Set(['VL','CL','VB','CB','VD','CD']);
-const CMT_KEYS = ['ANTI','MOD','TYPE','LENGTH','CLASS','NOTE','ASEQ','DSEQ'];
-
-/* ---------- palettes ---------- */
-const PALETTES = {
-  /* Aureka figure guide: own molecules on the Blues ramp off #0000FF,
-     benchmarks on the Reds ramp off #FF0000, controls on Greys off #808080 */
-  aureka: {a:['#0000FF','#00FFFF'], b:['#FF0000','#FFD700'], c:['#808080','#C0C0C0'],
-           d:['#00008B','#87CEFA'], e:['#8B0000','#FA8072'], f:['#4682B4','#B0C4DE'],
-           g:['#DC143C','#F08080'], h:['#191970','#AFEEEE']},
-  figure: {a:['#FF0000','#FFD700'], b:['#0000FF','#00FFFF'], c:['#808080','#C0C0C0'],
-           d:['#8B0000','#FA8072'], e:['#00008B','#87CEFA'], f:['#DC143C','#F08080'],
-           g:['#4682B4','#B0C4DE'], h:['#191970','#AFEEEE']},
-  strict: {a:['#0000FF','#87CEFA'], b:['#FF0000','#FFA07A'], c:['#808080','#D3D3D3'],
-           d:['#00008B','#B0C4DE'], e:['#8B0000','#F08080'], f:['#4682B4','#ADD8E6'],
-           g:['#B22222','#FA8072'], h:['#191970','#AFEEEE']}
-};
-/* non-Ig domains reuse the ChimeraX colours from the Aureka structure guide */
-const COL_X = '#6C5ABA', COL_XL = '#CCC2FB', COL_C = '#F7DEB5';
-
-/* ---------- format library (authored in tools/build_formats.py) ---------- */
+/* generated from formats.json by tools/build_formats.py - do not edit here */
 const LIBRARY = [
  {n:"Fv",c:"Fragments",d:"The minimal antigen-binding unit: a VH\u2013VL heterodimer with no constant domains.",a:"VH.a(1:2)|VL.a(2:1)"},
  {n:"scFv",c:"Fragments",d:"VH and VL carried on one polypeptide and held together by a flexible linker.",a:"VH.a(1:3)-L(2)[LENGTH:15]-VL.a(3:1)"},
@@ -399,9 +367,55 @@ const LIBRARY = [
  {n:"TCR alpha-beta",c:"Receptors",d:"The alpha/beta T-cell receptor ectodomain pair.",a:"VA(1:3)-CA(2:4){1}|VB(3:1)-CB(4:2){1}"},
  {n:"TCR gamma-delta",c:"Receptors",d:"The gamma/delta T-cell receptor ectodomain pair.",a:"VG(1:3)-CG(2:4){1}|VD(3:1)-CD(4:2){1}"},
 ].map(x => ({name:x.n, category:x.c, description:x.d, abml:x.a}));
-
 const byName = n => LIBRARY.find(f => f.name === n);
 const slug = n => n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+</script>
+
+<script>
+/* ============================================================
+   Aureka AbDraw - drawing engine
+   Parser, layout and SVG renderer for the AbML antibody notation.
+   Pure: no DOM, no globals beyond its own. Runs in a browser as a plain
+   script and in Node via require().
+
+   AbML grammar: Sweet-Jones, Ahmad & Martin, mAbs 14:1 (2022).
+   Independent implementation; see NOTICE.md.
+   ============================================================ */
+"use strict";
+
+/* ============================================================
+   Aureka AbDraw — AbML v1.06 parser + schematic renderer
+   AbML grammar: Sweet-Jones, Ahmad & Martin, mAbs 2022 (abYdraw, GPL-3.0)
+   ============================================================ */
+
+/* ---------- grammar tables ---------- */
+const VERSION = '1.2.0';
+const DTYPES = ['VHH','CH1','CH2','CH3','CH4','CH5','VH','VL','CL','VA','VB','VG','VD','CA','CB','CG','CD','H','L','X','C'];
+const MODCH  = '*>@+_!^';
+const MODNAME = {'*':'general modification','>':'knob','@':'hole','+':'positive charge','_':'negative charge','!':'aglycosyl CH2','^':'ADC conjugation site'};
+const CONNECTOR = new Set(['H','L']);
+/* heavy-derived vs light-derived domain origin (drives the pale/dark tint) */
+const HEAVYSIDE = new Set(['VH','VHH','CH1','CH2','CH3','CH4','CH5','H','VA','CA','VG','CG']);
+const LIGHTSIDE = new Set(['VL','CL','VB','CB','VD','CD']);
+const CMT_KEYS = ['ANTI','MOD','TYPE','LENGTH','CLASS','NOTE','ASEQ','DSEQ'];
+
+/* ---------- palettes ---------- */
+const PALETTES = {
+  /* Aureka figure guide: own molecules on the Blues ramp off #0000FF,
+     benchmarks on the Reds ramp off #FF0000, controls on Greys off #808080 */
+  aureka: {a:['#0000FF','#00FFFF'], b:['#FF0000','#FFD700'], c:['#808080','#C0C0C0'],
+           d:['#00008B','#87CEFA'], e:['#8B0000','#FA8072'], f:['#4682B4','#B0C4DE'],
+           g:['#DC143C','#F08080'], h:['#191970','#AFEEEE']},
+  figure: {a:['#FF0000','#FFD700'], b:['#0000FF','#00FFFF'], c:['#808080','#C0C0C0'],
+           d:['#8B0000','#FA8072'], e:['#00008B','#87CEFA'], f:['#DC143C','#F08080'],
+           g:['#4682B4','#B0C4DE'], h:['#191970','#AFEEEE']},
+  strict: {a:['#0000FF','#87CEFA'], b:['#FF0000','#FFA07A'], c:['#808080','#D3D3D3'],
+           d:['#00008B','#B0C4DE'], e:['#8B0000','#F08080'], f:['#4682B4','#ADD8E6'],
+           g:['#B22222','#FA8072'], h:['#191970','#AFEEEE']}
+};
+/* non-Ig domains reuse the ChimeraX colours from the Aureka structure guide */
+const COL_X = '#6C5ABA', COL_XL = '#CCC2FB', COL_C = '#F7DEB5';
+
 
 /* ---------- small helpers ---------- */
 const $ = s => document.querySelector(s);
@@ -983,6 +997,47 @@ function renderPanels(panels, opt, cols){
   return svgDocument(inner, C*cw, R*ch, opt, {title: 'Antibody format panels', abml: panels.map(p=>p.abml).join('  ||  ')});
 }
 
+
+/* ---------- a complete option set, so callers need not assemble one ---------- */
+function defaultOptions(over){
+  return Object.assign({
+    pal: PALETTES.aureka,
+    tint: 'type',          // 'type' | 'chain' | 'flat'
+    labels: true,
+    showSpec: false,
+    hingeLabel: false,
+    linkLabel: true,
+    ids: false,
+    notes: false,
+    ss: true,              // interchain (hinge) disulfides
+    ssDomain: false,       // CH1-CL style domain-pair disulfides
+    arrows: false,
+    paperColours: false,
+    lw: 1.6,
+    armAngle: 30,
+    scale: 1.6,
+    bg: null,              // null = transparent
+    ink: '#000000',
+    figTitle: 'Antibody format schematic'
+  }, over || {});
+}
+
+/* ---------- Node ---------- */
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    VERSION, DTYPES, MODCH, MODNAME, CONNECTOR, HEAVYSIDE, LIGHTSIDE, CMT_KEYS,
+    PALETTES, COL_X, COL_XL, COL_C, GEO, VDOM,
+    parseAbML, writeAbML, findCore, layout,
+    chainSpec, colorFor, readable,
+    buildFigure, commentLines, svgDocument, renderOne, renderPanels,
+    defaultOptions, esc, splitTop
+  };
+}
+
+</script>
+
+<script>
+"use strict";
 /* ============================================================
    App state + UI
    ============================================================ */
@@ -1362,9 +1417,11 @@ function fileStem(){
   });
 
   /* go */
+  $('#ver').textContent = 'v' + VERSION;
   $('#abml').value = S.abml;
   buildLibrary(''); buildPalette(); buildPanels(); draw();
 })();
+
 </script>
 
 </body>

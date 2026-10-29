@@ -1,0 +1,307 @@
+<title>Aureka AbDraw</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Spectral:wght@600&display=swap">
+<style>
+/* Layout: fixed app shell — header bar, control rail + paper canvas, AbML strip along the foot. */
+:root{
+  --bg:#F5F7FA; --surface:#FFFFFF; --surface2:#EAEEF5; --line:#D7DEEA;
+  --fg:#121821; --muted:#596375; --accent:#2A47C8; --accent-soft:#E4E9FA;
+  --danger:#B3261E; --ok:#1C7A4C; --paper:#FFFFFF; --paper-line:#F2F4F8;
+  --f-display:'Spectral',Georgia,'Times New Roman',serif;
+  --f-ui:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0D1118; --surface:#151B24; --surface2:#1D242F; --line:#29313E;
+  --fg:#E6EBF3; --muted:#939FB1; --accent:#8098F7; --accent-soft:#1B2340;
+  --danger:#F09289; --ok:#58C58D; --paper:#FFFFFF; --paper-line:#E7EBF1;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0D1118; --surface:#151B24; --surface2:#1D242F; --line:#29313E;
+  --fg:#E6EBF3; --muted:#939FB1; --accent:#8098F7; --accent-soft:#1B2340;
+  --danger:#F09289; --ok:#58C58D; --paper:#FFFFFF; --paper-line:#E7EBF1;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:13px;line-height:1.45}
+button,input,select,textarea{font:inherit;color:inherit}
+
+.app{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:12px;gap:10px;max-width:1500px;margin:0 auto}
+
+/* header */
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.brand{font-family:var(--f-display);font-size:19px;font-weight:600;letter-spacing:-.01em;margin:0;white-space:nowrap}
+.brand small{font-family:var(--f-ui);font-size:10.5px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-left:9px}
+.bar .sp{flex:1}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:6px 11px;cursor:pointer;white-space:nowrap;font-size:12.5px}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover{filter:brightness(1.08);color:#fff}
+.btn:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+/* main split */
+.main{display:grid;grid-template-columns:286px minmax(0,1fr);gap:10px;min-height:0}
+.rail{background:var(--surface);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid var(--line);background:var(--surface2);flex:none}
+.tab{flex:1;border:0;background:none;padding:8px 1px;cursor:pointer;font-size:11px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent}
+.tab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent);background:var(--surface)}
+.pane{padding:11px;overflow:auto;min-height:0;flex:1;display:flex;flex-direction:column;gap:11px}
+.pane[hidden]{display:none!important}
+
+.grp{display:flex;flex-direction:column;gap:7px}
+.grp>h3{margin:0;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.row{display:flex;gap:6px;align-items:center;min-width:0}
+.row>label{flex:1;min-width:0;font-size:12px}
+select,input[type=text],input[type=number],textarea{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:5px 7px;min-width:0;width:100%}
+input[type=color]{width:30px;height:24px;padding:1px;border:1px solid var(--line);border-radius:5px;background:var(--surface);cursor:pointer;flex:none}
+input[type=range]{width:100%;accent-color:var(--accent)}
+label.ck{display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer}
+label.ck input{accent-color:var(--accent);flex:none}
+
+.lib{display:flex;flex-direction:column;gap:2px}
+.lib button{text-align:left;border:0;background:none;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:12px}
+.lib button:hover{background:var(--surface2)}
+.libcat{margin:9px 0 1px;font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);opacity:.85}
+.lib .libcat:first-child{margin-top:0}
+.lib button[aria-current="true"]{background:var(--accent-soft);color:var(--accent);font-weight:500}
+
+/* chain builder */
+.chain{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.chain>header{display:flex;align-items:center;gap:6px;background:var(--surface2);padding:4px 7px;font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--muted)}
+.chain>header .sp{flex:1}
+.chain .doms{display:flex;flex-wrap:wrap;gap:4px;padding:7px}
+.dchip{display:flex;align-items:center;gap:3px;border:1px solid var(--line);border-radius:999px;padding:1px 3px 1px 8px;font-family:var(--f-mono);font-size:11px;background:var(--surface)}
+.dchip button,.chain header button{border:0;background:none;cursor:pointer;color:var(--muted);padding:0 4px;line-height:1;font-size:13px;border-radius:4px}
+.dchip button:hover,.chain header button:hover{color:var(--danger)}
+.swatch{width:9px;height:9px;border-radius:50%;border:1px solid rgba(0,0,0,.45);flex:none}
+
+/* canvas */
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.stagebar{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line);background:var(--surface2);font-size:11.5px;color:var(--muted);flex:none;flex-wrap:wrap}
+.stagebar .sp{flex:1}
+.paper{flex:1;min-height:0;overflow:auto;display:grid;place-items:center;padding:16px;
+  background-color:var(--paper);
+  background-image:linear-gradient(45deg,var(--paper-line) 25%,transparent 25%,transparent 75%,var(--paper-line) 75%),linear-gradient(45deg,var(--paper-line) 25%,transparent 25%,transparent 75%,var(--paper-line) 75%);
+  background-size:18px 18px;background-position:0 0,9px 9px}
+.paper.solid{background-image:none;background-color:#FFFFFF}
+.paper svg{max-width:100%;height:auto;display:block}
+
+/* abml strip */
+.foot{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px;display:flex;flex-direction:column;gap:6px;flex:none}
+.foot .hd{display:flex;align-items:center;gap:9px;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.foot .hd .sp{flex:1}
+#abml{font-family:var(--f-mono);font-size:12px;line-height:1.6;resize:vertical;min-height:62px;max-height:170px}
+.status{font-size:11.5px;font-weight:500;letter-spacing:0;text-transform:none}
+.status.ok{color:var(--ok)} .status.bad{color:var(--danger)}
+.notes{font-size:11.5px;color:var(--muted);font-family:var(--f-mono);white-space:pre-wrap;word-break:break-word}
+.notes:empty{display:none}
+
+.hint{font-size:11.5px;color:var(--muted);margin:0}
+table.ref{width:100%;border-collapse:collapse;font-size:11.5px}
+table.ref td{padding:2.5px 0;vertical-align:top;border-bottom:1px solid var(--line)}
+table.ref td:first-child{font-family:var(--f-mono);white-space:nowrap;padding-right:9px;color:var(--accent);width:1%}
+table.ref tr:last-child td{border-bottom:0}
+.hint code{font-family:var(--f-mono);font-size:11px;background:var(--surface2);padding:1px 4px;border-radius:4px}
+.panelrow{display:flex;gap:6px;align-items:center}
+.panelrow input[type=text]{font-family:var(--f-mono);font-size:11px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 15px;border-radius:999px;font-size:12.5px;z-index:40;box-shadow:0 6px 22px rgba(0,0,0,.26)}
+.toast[hidden]{display:none!important}
+
+@media (max-width:860px){
+  .main{grid-template-columns:1fr;grid-template-rows:minmax(220px,42vh) minmax(240px,auto)}
+  .main .stage{order:-1}
+  .rail{max-height:46vh}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="app">
+  <div class="bar">
+    <h1 class="brand">Aureka AbDraw<small>AbML → figure · <span id="ver"></span></small></h1>
+    <span class="sp"></span>
+    <button class="btn" id="bCopy">Copy AbML</button>
+    <button class="btn" id="bCopySvg">Copy SVG</button>
+    <button class="btn" id="bPng">PNG</button>
+    <button class="btn pri" id="bSvg">Export SVG</button>
+  </div>
+
+  <div class="main">
+    <div class="rail">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="tab-lib"  aria-selected="true"  aria-controls="pane-lib">Formats</button>
+        <button class="tab" role="tab" id="tab-bld"  aria-selected="false" aria-controls="pane-bld">Build</button>
+        <button class="tab" role="tab" id="tab-sty"  aria-selected="false" aria-controls="pane-sty">Style</button>
+        <button class="tab" role="tab" id="tab-pan"  aria-selected="false" aria-controls="pane-pan">Panels</button>
+        <button class="tab" role="tab" id="tab-syn"  aria-selected="false" aria-controls="pane-syn">Syntax</button>
+      </div>
+
+      <div class="pane" id="pane-lib" role="tabpanel" aria-labelledby="tab-lib">
+        <div class="grp">
+          <h3>Search</h3>
+          <input type="text" id="libSearch" placeholder="knob, crossmab, scFv…" autocomplete="off">
+        </div>
+        <div class="grp"><h3>Format library</h3><div class="lib" id="libList"></div></div>
+      </div>
+
+      <div class="pane" id="pane-bld" role="tabpanel" aria-labelledby="tab-bld" hidden>
+        <p class="hint">Pick a domain type, give it a specificity, and add it to the end of a chain.
+        Build the chains in N&rarr;C order, then press <strong>Renumber &amp; auto-pair</strong> &mdash;
+        that allocates the identifiers and works out which domains face each other, so you never
+        write the numbering by hand.</p>
+        <div class="grp">
+          <h3>Add domain</h3>
+          <div class="row">
+            <select id="addType"></select>
+            <select id="addSpec" style="max-width:74px"></select>
+          </div>
+          <div class="row" id="addMods"></div>
+          <div class="row">
+            <select id="addChain" style="flex:1"></select>
+            <button class="btn" id="bAddDom">Add</button>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>Chains</h3>
+          <div id="chainList" style="display:flex;flex-direction:column;gap:7px"></div>
+          <button class="btn" id="bAddChain">+ New chain</button>
+        </div>
+        <div class="grp">
+          <h3>Repair</h3>
+          <button class="btn" id="bRenumber">Renumber &amp; auto-pair</button>
+          <p class="hint">Renumbers every domain left to right and pairs V with V, C with C across the facing chain — the same bookkeeping <code>Tidy</code> does in abYdraw.</p>
+        </div>
+      </div>
+
+      <div class="pane" id="pane-sty" role="tabpanel" aria-labelledby="tab-sty" hidden>
+        <div class="grp">
+          <h3>Labels</h3>
+          <label class="ck"><input type="checkbox" id="oLabels" checked> Domain labels</label>
+          <label class="ck"><input type="checkbox" id="oSpec"> Show specificity (VH<sub>a</sub>)</label>
+          <label class="ck"><input type="checkbox" id="oHinge"> Label hinges</label>
+          <label class="ck"><input type="checkbox" id="oLink" checked> Label linker lengths</label>
+          <label class="ck"><input type="checkbox" id="oIds"> Domain ID numbers</label>
+          <label class="ck"><input type="checkbox" id="oNotes" checked> Comment list beside figure</label>
+        </div>
+        <div class="grp">
+          <h3>Bonds</h3>
+          <label class="ck"><input type="checkbox" id="oSS" checked> Interchain disulfides (hinge)</label>
+          <label class="ck"><input type="checkbox" id="oSSdom"> Domain-pair disulfides (CH1&ndash;CL)</label>
+          <label class="ck"><input type="checkbox" id="oArrow"> N→C direction arrows</label>
+          <label class="ck"><input type="checkbox" id="oPaper"> Paper connector colours</label>
+          <div class="row"><label for="oLw">Line weight</label><span id="oLwV" style="color:var(--muted)">1.6</span></div>
+          <input type="range" id="oLw" min="0.6" max="4" step="0.2" value="1.6">
+        </div>
+        <div class="grp">
+          <h3>Geometry</h3>
+          <div class="row"><label for="oAngle">Arm angle</label><span id="oAngleV" style="color:var(--muted)">30°</span></div>
+          <input type="range" id="oAngle" min="10" max="55" step="1" value="30">
+          <div class="row"><label for="oScale">Scale</label><span id="oScaleV" style="color:var(--muted)">1.9×</span></div>
+          <input type="range" id="oScale" min="0.8" max="4" step="0.1" value="1.9">
+        </div>
+        <div class="grp">
+          <h3>Ground</h3>
+          <label class="ck"><input type="checkbox" id="oBg"> Opaque white background</label>
+          <p class="hint">Off = transparent, per the Aureka figure guide.</p>
+        </div>
+        <div class="grp">
+          <h3>Tint rule</h3>
+          <select id="oTint">
+            <option value="type">By domain origin — heavy dark, light pale</option>
+            <option value="chain">By chain — first of each pair dark</option>
+            <option value="flat">By specificity only — one hue per arm</option>
+          </select>
+          <p class="hint">Domain origin is the CrossMab convention: colour travels with the domain when VH/VL or CH1/CL swap chains.</p>
+        </div>
+        <div class="grp">
+          <h3>Specificity palette</h3>
+          <div id="palList" style="display:flex;flex-direction:column;gap:5px"></div>
+          <div class="row">
+            <select id="palPreset" style="flex:1">
+              <option value="aureka">Aureka — blue lead / red benchmark</option>
+              <option value="figure">Reference figure — red / blue</option>
+              <option value="strict">Aureka strict — Blues &amp; Reds ramps</option>
+            </select>
+            <button class="btn" id="bPal">Apply</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pane" id="pane-pan" role="tabpanel" aria-labelledby="tab-pan" hidden>
+        <p class="hint">Build a lettered multi-panel figure. Each row is one AbML string; the grid exports as a single SVG.</p>
+        <div class="grp"><h3>Panels</h3><div id="panList" style="display:flex;flex-direction:column;gap:5px"></div>
+          <div class="row">
+            <button class="btn" id="bPanAdd" style="flex:1">+ Add current</button>
+            <button class="btn" id="bPanClear">Clear</button>
+          </div>
+        </div>
+        <div class="grp">
+          <h3>Grid</h3>
+          <div class="row"><label for="oCols">Columns</label><input type="number" id="oCols" min="1" max="8" value="4" style="max-width:62px"></div>
+          <label class="ck"><input type="checkbox" id="oPanOn"> Show panel grid on canvas</label>
+        </div>
+      </div>
+
+      <div class="pane" id="pane-syn" role="tabpanel" aria-labelledby="tab-syn" hidden>
+        <p class="hint">AbML describes a molecule as chains of domains. Chains are separated by <code>|</code>, domains within a chain by <code>-</code>, reading N-terminus to C-terminus.</p>
+        <div class="grp"><h3>Domain types</h3><table class="ref">
+          <tr><td>VH VL</td><td>variable heavy / light</td></tr>
+          <tr><td>CH1&ndash;CH5</td><td>constant heavy</td></tr>
+          <tr><td>CL</td><td>constant light</td></tr>
+          <tr><td>VHH</td><td>camelid single domain</td></tr>
+          <tr><td>H</td><td>hinge (drawn as a connector)</td></tr>
+          <tr><td>L</td><td>linker (drawn as a connector)</td></tr>
+          <tr><td>X</td><td>any other protein domain</td></tr>
+          <tr><td>C</td><td>chemical crosslinker</td></tr>
+          <tr><td>VA CA VB CB</td><td>TCR alpha / beta</td></tr>
+          <tr><td>VG CG VD CD</td><td>TCR gamma / delta</td></tr>
+        </table></div>
+        <div class="grp"><h3>Qualifiers</h3><table class="ref">
+          <tr><td>.a &ndash; .h</td><td>specificity, picks the colour</td></tr>
+          <tr><td>(3)</td><td>domain identifier</td></tr>
+          <tr><td>(3:10)</td><td>identifier, paired with domain 10</td></tr>
+          <tr><td>{2}</td><td>disulfides across that pairing</td></tr>
+          <tr><td>[ANTI:CD3]</td><td>comment &mdash; also MOD, TYPE, LENGTH, CLASS, NOTE, ASEQ, DSEQ</td></tr>
+          <tr><td>|[ADC]</td><td>trailing pseudo-chain: nonspecific conjugation</td></tr>
+        </table>
+        <p class="hint">A shared light chain carries both specificities: heavy chains <code>VH.a</code> and
+        <code>VH.b</code> against a common <code>VL.ab</code>. Knob and hole cannot sit on one domain, nor can
+        both charges, and <code>!</code> is only valid on CH2.</p></div>
+        <div class="grp"><h3>Modifications</h3><table class="ref">
+          <tr><td>&gt;</td><td>knob</td></tr>
+          <tr><td>@</td><td>hole</td></tr>
+          <tr><td>+ _</td><td>positive / negative charge pair</td></tr>
+          <tr><td>^</td><td>conjugation site</td></tr>
+          <tr><td>!</td><td>aglycosyl CH2</td></tr>
+          <tr><td>*</td><td>general modification</td></tr>
+        </table>
+        <p class="hint">Modifications sit straight after the type and before the specificity: <code>CH3&gt;(5:12)</code>, <code>VL*.a(6:1)</code>.</p></div>
+        <div class="grp"><h3>Worked example</h3>
+          <p class="hint" style="font-family:var(--f-mono);line-height:1.7;word-break:break-all">VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3&gt;(5:12)</p>
+          <p class="hint">One knob-bearing heavy chain: VH of specificity a paired with domain 6, CH1 paired with 7 through one disulfide, hinge paired with the other hinge through two, then CH2 and a knobbed CH3.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stagebar">
+        <strong id="sName" style="color:var(--fg)"></strong><span id="sDesc" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</span><span class="sp"></span><span id="sTopo"></span><span id="sCount"></span>
+      </div>
+      <div class="paper" id="paper"></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="hd"><span>AbML</span><span class="status" id="sStatus"></span><span class="sp"></span>
+      <button class="btn" id="bClear" style="padding:3px 9px;font-size:11.5px">Clear</button>
+    </div>
+    <textarea id="abml" spellcheck="false" autocomplete="off"></textarea>
+    <div class="notes" id="sNotes"></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+

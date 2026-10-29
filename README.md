@@ -156,27 +156,59 @@ reference is built into the tool under its **Syntax** tab.
 | [TCR alpha-beta](https://drjackxiaoyuchen.github.io/aureka-abdraw/app/#tcr-alpha-beta) | The alpha/beta T-cell receptor ectodomain pair. |
 | [TCR gamma-delta](https://drjackxiaoyuchen.github.io/aureka-abdraw/app/#tcr-gamma-delta) | The gamma/delta T-cell receptor ectodomain pair. |
 
+## Using the engine directly
+
+The drawing logic is a standalone module with no dependencies and no DOM access, so it runs
+under Node as readily as in a browser:
+
+```js
+const E = require('./src/engine.js');
+
+const { svg } = E.renderOne(
+  'VH.a(1:6)-CH1(2:7){1}-H(3:10){2}-CH2(4:11)-CH3>(5:12)|VL.a(6:1)-CL(7:2){1}' +
+  '|VH.b(8:13)-CH1(9:14){1}-H(10:3){2}-CH2(11:4)-CH3@(12:5)|VL.b(13:8)-CL(14:9){1}',
+  E.defaultOptions({ scale: 2, bg: '#ffffff' })
+);
+```
+
+`parseAbML` returns the chains, interactions and any errors; `layout` places the domains;
+`buildFigure` gives the SVG fragment with its bounding box; `renderOne` and `renderPanels`
+produce finished documents. `defaultOptions()` fills in a complete option set.
+
 ## Repository layout
 
 ```
+src/engine.js           parser, layout and renderer - pure, no DOM, Node-compatible
+src/ui.js               application state and wiring
+src/shell.html          markup, styles, fonts
+tests/engine.test.js    drawing-correctness tests
+
+app/index.html          the built tool - one self-contained file (generated)
 index.html              landing page (generated)
-app/index.html          the tool — single self-contained file
 gallery/index.html      rendered gallery (generated)
-formats.json            the format library as data
 assets/svg/             one pre-rendered SVG per format (generated)
+formats.json            the format library as data (generated)
 docs/abml.md            AbML reference
-tools/build_formats.py  generates formats.json from scaffold builders
-tools/build_site.py     generates index.html and gallery/
-tools/render_gallery.js generates assets/svg/
+
+tools/build_formats.py  formats.json, from scaffold builders
+tools/build_app.py      app/index.html, from src/ and formats.json
+tools/render_gallery.js assets/svg/, straight from the engine
+tools/build_site.py     index.html and gallery/
 ```
 
-Regenerate everything after editing `tools/build_formats.py`:
+## Building
+
+No dependencies beyond Python 3 and Node.
 
 ```bash
-python3 tools/build_formats.py formats.json
-node    tools/render_gallery.js     # needs playwright
-python3 tools/build_site.py
+python3 tools/build_formats.py formats.json   # the format library
+python3 tools/build_app.py                    # app/index.html
+node    tools/render_gallery.js               # one SVG per format
+python3 tools/build_site.py                   # landing page and gallery
+node    tests/engine.test.js                  # 19 correctness checks
 ```
+
+Edit `src/`, never `app/index.html` — that file is generated.
 
 ## Limits
 

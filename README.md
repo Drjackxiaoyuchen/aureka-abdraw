@@ -6,9 +6,14 @@ AbDraw reads [AbML](docs/abml.md) — a compact notation for antibody architectu
 the molecule as a domain schematic that exports to clean, editable SVG. 43 formats ship in the
 library, from a bare Fv to trispecific knob-into-hole constructs.
 
+[![release](https://img.shields.io/github/v/release/Drjackxiaoyuchen/aureka-abdraw?color=2A47C8)](https://github.com/Drjackxiaoyuchen/aureka-abdraw/releases)
+[![license](https://img.shields.io/badge/license-MIT-2A47C8)](LICENSE)
+[![pages](https://img.shields.io/badge/demo-live-2A47C8)](https://drjackxiaoyuchen.github.io/aureka-abdraw/)
+
 [**Open the tool**](https://drjackxiaoyuchen.github.io/aureka-abdraw/app/) ·
 [**Browse the gallery**](https://drjackxiaoyuchen.github.io/aureka-abdraw/gallery/) ·
-[**AbML reference**](docs/abml.md)
+[**AbML reference**](docs/abml.md) ·
+[**Changelog**](CHANGELOG.md)
 
 ![AbDraw rendering a CrossMab CH1-CL](assets/screenshot-app.png)
 
@@ -192,6 +197,12 @@ Please cite that paper if you use AbDraw in published work.
 This project is an independent implementation and shares no code with the reference tool,
 [abYdraw](https://github.com/JamesSweetJones/abYdraw) (GPL-3.0). See [NOTICE.md](NOTICE.md) for detail
 on how the format library was produced.
+
+## Versioning
+
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html); see [CHANGELOG.md](CHANGELOG.md).
+Every exported SVG records the version that produced it and the AbML string behind it, so a
+figure in a paper can always be traced back to its source expression.
 
 ## License
 

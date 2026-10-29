@@ -3,7 +3,7 @@
 **Draw multispecific antibody format schematics from one line of text.**
 
 AbDraw reads [AbML](docs/abml.md) — a compact notation for antibody architecture — and renders
-the molecule as a domain schematic that exports to clean, editable SVG. 43 formats ship in the
+the molecule as a domain schematic that exports to clean, editable SVG. 45 formats ship in the
 library, from a bare Fv to trispecific knob-into-hole constructs.
 
 [![release](https://img.shields.io/github/v/release/Drjackxiaoyuchen/aureka-abdraw?color=2A47C8)](https://github.com/Drjackxiaoyuchen/aureka-abdraw/releases)
@@ -56,7 +56,7 @@ reference is built into the tool under its **Syntax** tab.
 ## Features
 
 - **Live parse and render** — the figure follows the text as you type, with parse errors listed rather than swallowed.
-- **43-format library** in eight families, each one a starting point you can modify.
+- **45-format library** in eight families, each one a starting point you can modify.
 - **Structured builder** — assemble chains from dropdowns and let the tool write the AbML; `Renumber & auto-pair` fixes up identifiers and interactions from the architecture.
 - **Panel figures** — stack several formats into a lettered A/B/C grid and export the comparison as one SVG.
 - **SVG and PNG export**, plus copy-to-clipboard for both the AbML and the SVG markup.
@@ -98,7 +98,7 @@ reference is built into the tool under its **Syntax** tab.
 | Format | Description |
 |---|---|
 | [Knob-into-hole](https://drjackxiaoyuchen.github.io/aureka-abdraw/app/#knob-into-hole) | Reciprocal CH3 steric mutations drive heterodimerisation of two different heavy chains. |
-| [Common light chain](https://drjackxiaoyuchen.github.io/aureka-abdraw/app/#common-light-chain) | Both arms share one light chain, so only heavy-chain pairing has to be engineered. |
+| [Common light chain](https://drjackxiaoyuchen.github.io/aureka-abdraw/app/#common-light-chain) | Both arms share one light chain, so only heavy-chain pairing has to be engineered. The shared chain carries both specificities, per the AbML convention. |
 | [CrossMab CH1-CL](https://drjackxiaoyuchen.github.io/aureka-abdraw/app/#crossmab-ch1-cl) | CH1 and CL are exchanged in one arm, so the wrong light chain can no longer pair. |
 | [CrossMab VH-VL](https://drjackxiaoyuchen.github.io/aureka-abdraw/app/#crossmab-vh-vl) | VH and VL are exchanged in one arm, keeping the constant-domain interface untouched. |
 | [CrossMab Fab](https://drjackxiaoyuchen.github.io/aureka-abdraw/app/#crossmab-fab) | The whole Fab is swapped in one arm — both the variable and the constant pair cross over. |
@@ -124,7 +124,7 @@ reference is built into the tool under its **Syntax** tab.
 | Format | Description |
 |---|---|
 | [BiTE (tandem scFv)](https://drjackxiaoyuchen.github.io/aureka-abdraw/app/#bite-tandem-scfv) | Two scFvs in tandem on one chain — the T-cell engager archetype, no Fc at all. |
-| [Diabody](https://drjackxiaoyuchen.github.io/aureka-abdraw/app/#diabody) | Linkers too short to fold back, so two chains cross-pair into a compact bivalent dimer. |
+| [Diabody](https://drjackxiaoyuchen.github.io/aureka-abdraw/app/#diabody) | A 5-residue linker is too short for VH to fold back onto its own VL, so two chains cross-pair. |
 | [scDiabody](https://drjackxiaoyuchen.github.io/aureka-abdraw/app/#scdiabody) | The diabody folded onto a single chain by adding a third, longer middle linker. |
 | [DART](https://drjackxiaoyuchen.github.io/aureka-abdraw/app/#dart) | A diabody locked by an added C-terminal interchain disulfide for stability. |
 | [TandAb](https://drjackxiaoyuchen.github.io/aureka-abdraw/app/#tandab) | Two identical four-domain chains dimerise head-to-tail into a tetravalent bispecific. |
@@ -148,6 +148,13 @@ reference is built into the tool under its **Syntax** tab.
 |---|---|
 | [Trispecific IgG-scFv](https://drjackxiaoyuchen.github.io/aureka-abdraw/app/#trispecific-igg-scfv) | A knob-into-hole bispecific with a third specificity appended as an scFv on one chain. |
 | [Trispecific VHH-Fc](https://drjackxiaoyuchen.github.io/aureka-abdraw/app/#trispecific-vhh-fc) | Three VHH domains distributed across a knob-into-hole Fc. |
+
+### T-cell engagers
+
+| Format | Description |
+|---|---|
+| [2+1 TCB (CrossMab CH1-CL)](https://drjackxiaoyuchen.github.io/aureka-abdraw/app/#2-1-tcb-crossmab-ch1-cl) | Bivalent for the tumour antigen, monovalent for CD3. The tumour Fab is fused head-to-tail to the N-terminus of the CD3 CrossFab, which sits proximal to the hinge. Cibisatamab geometry. |
+| [2+1 TCB (CrossMab VH-VL, charged)](https://drjackxiaoyuchen.github.io/aureka-abdraw/app/#2-1-tcb-crossmab-vh-vl-charged) | The same 2:1 geometry with VH/VL exchanged in the CD3 Fab instead, plus charge pairs in the untouched Fabs to suppress the Bence-Jones-like side product. Glofitamab geometry. |
 
 ### Receptors
 

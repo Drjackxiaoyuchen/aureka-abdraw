@@ -4,6 +4,16 @@ Notable changes to Aureka AbDraw. This project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html), and the format of this file
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.0] — 2026-10-29
+
+### Added
+
+- **Two 2+1 T-cell engager formats**, in a new *T-cell engagers* family: `2+1 TCB (CrossMab CH1-CL)`
+  and `2+1 TCB (CrossMab VH-VL, charged)` — the cibisatamab and glofitamab geometries.
+  Bivalent for the tumour antigen, monovalent for CD3, with the tumour Fab fused head-to-tail to
+  the N-terminus of the CD3 CrossFab so the CD3 binder sits proximal to the hinge. Effector
+  function silenced on both heavy chains. The library is now 45 formats across nine families.
+
 ## [1.2.2] — 2026-10-29
 
 ### Fixed

@@ -15,7 +15,7 @@
    ============================================================ */
 
 /* ---------- grammar tables ---------- */
-const VERSION = '1.2.2';
+const VERSION = '1.3.0';
 const DTYPES = ['VHH','CH1','CH2','CH3','CH4','CH5','VH','VL','CL','VA','VB','VG','VD','CA','CB','CG','CD','H','L','X','C'];
 const MODCH  = '*>@+_!^';
 const MODNAME = {'*':'general modification','>':'knob','@':'hole','+':'positive charge','_':'negative charge','!':'aglycosyl CH2','^':'ADC conjugation site'};

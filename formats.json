@@ -246,6 +246,18 @@
   "abml": "VHH.a(1)-L(2)[LENGTH:15]-VHH.b(3)-H(4:8){2}-CH2(5:9)-CH3>(6:10)|VHH.c(7)-H(8:4){2}-CH2(9:5)-CH3@(10:6)"
  },
  {
+  "name": "2+1 TCB (CrossMab CH1-CL)",
+  "category": "T-cell engagers",
+  "description": "Bivalent for the tumour antigen, monovalent for CD3. The tumour Fab is fused head-to-tail to the N-terminus of the CD3 CrossFab, which sits proximal to the hinge. Cibisatamab geometry.",
+  "abml": "VH.a(1:16)[ANTI:CEA]-CH1(2:17){1}-L(3)[LENGTH:10]-VH.b(4:9)[ANTI:CD3e]-CL(5:10){1}-H(6:13){2}-CH2*(7:14)[MOD:NOADCCCDC,NOTE:P329G LALA]-CH3>(8:15)|VL.b(9:4)[ANTI:CD3e]-CH1(10:5){1}|VH.a(11:18)[ANTI:CEA]-CH1(12:19){1}-H(13:6){2}-CH2*(14:7)[MOD:NOADCCCDC,NOTE:P329G LALA]-CH3@(15:8)|VL.a(16:1)[ANTI:CEA]-CL(17:2){1}|VL.a(18:11)[ANTI:CEA]-CL(19:12){1}"
+ },
+ {
+  "name": "2+1 TCB (CrossMab VH-VL, charged)",
+  "category": "T-cell engagers",
+  "description": "The same 2:1 geometry with VH/VL exchanged in the CD3 Fab instead, plus charge pairs in the untouched Fabs to suppress the Bence-Jones-like side product. Glofitamab geometry.",
+  "abml": "VH.a(1:16)[ANTI:CD20]-CH1*+(2:17){1}[MOD:PI]-L(3)[LENGTH:10]-VL.b(4:9)[ANTI:CD3e]-CH1(5:10){1}-H(6:13){2}-CH2*(7:14)[MOD:NOADCCCDC,NOTE:P329G LALA]-CH3>(8:15)|VH.b(9:4)[ANTI:CD3e]-CL(10:5){1}|VH.a(11:18)[ANTI:CD20]-CH1*+(12:19){1}[MOD:PI]-H(13:6){2}-CH2*(14:7)[MOD:NOADCCCDC,NOTE:P329G LALA]-CH3@(15:8)|VL.a(16:1)[ANTI:CD20]-CL*_(17:2){1}[MOD:PI]|VL.a(18:11)[ANTI:CD20]-CL*_(19:12){1}[MOD:PI]"
+ },
+ {
   "name": "TCR alpha-beta",
   "category": "Receptors",
   "description": "The alpha/beta T-cell receptor ectodomain pair.",

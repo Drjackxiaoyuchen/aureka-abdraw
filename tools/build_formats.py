@@ -312,6 +312,49 @@ F('Trispecific VHH-Fc', 'Trispecific',
   {'chains': [['VHH.a#pv','L#pl[LENGTH:15]','VHH.b#pv2']+fc('p', ch3mods='>'),
               ['VHH.c#qv']+fc('q', ch3mods='@')], 'pairs': fc_pairs('p','q')})
 
+# ---- T-cell engagers (2+1 TCB) -------------------------------------------
+# Head-to-tail 2:1 geometry: a tumour Fab is fused through a flexible linker to the
+# N-terminus of the CD3 Fab on the knob heavy chain, so the tumour binder sits at the
+# tip and the CD3 CrossFab sits proximal to the hinge. Bivalent for the tumour antigen,
+# monovalent for CD3; P329G LALA abolishes FcgammaR and C1q binding.
+# Bacac, Klein & Umana, OncoImmunology 5:8 (2016); Surowka, Schaefer & Klein, mAbs 13 (2021).
+
+_FC_SILENT = 'MOD:NOADCCCDC,NOTE:P329G LALA'
+
+def tcb_2plus1(crossover, tumour, charges=False):
+    """2+1 T-cell bispecific. crossover='CH1-CL' (cibisatamab-like) or 'VH-VL'
+       (glofitamab-like, which adds charge pairs to the untouched Fabs)."""
+    ch = '*+' if charges else ''
+    cl = '*_' if charges else ''
+    cmt = '[MOD:PI]' if charges else ''
+    if crossover == 'CH1-CL':
+        cd3 = [f'VH.b#k2v[ANTI:CD3e]', f'CL#k2c']        # CL rides the heavy chain
+        xlc = [f'VL.b#xv[ANTI:CD3e]',  f'CH1#xc']        # CH1 rides the light chain
+    else:
+        cd3 = [f'VL.b#k2v[ANTI:CD3e]', f'CH1#k2c']       # VH/VL exchanged instead
+        xlc = [f'VH.b#xv[ANTI:CD3e]',  f'CL#xc']
+    hc_knob = ([f'VH.a#k1v[ANTI:{tumour}]', f'CH1{ch}#k1c{cmt}', 'L#klk[LENGTH:10]']
+               + cd3 + ['H#kh', f'CH2*#kg2[{_FC_SILENT}]', 'CH3>#kg3'])
+    hc_hole = [f'VH.a#hv[ANTI:{tumour}]', f'CH1{ch}#hc{cmt}',
+               'H#hh', f'CH2*#hg2[{_FC_SILENT}]', 'CH3@#hg3']
+    lc1 = [f'VL.a#l1v[ANTI:{tumour}]', f'CL{cl}#l1c{cmt}']
+    lc2 = [f'VL.a#l2v[ANTI:{tumour}]', f'CL{cl}#l2c{cmt}']
+    return {'chains': [hc_knob, xlc, hc_hole, lc1, lc2],
+            'pairs': [('k1v','l1v',0), ('k1c','l1c',1),      # distal tumour Fab
+                      ('k2v','xv',0),  ('k2c','xc',1),       # CD3 CrossFab, proximal
+                      ('kh','hh',2), ('kg2','hg2',0), ('kg3','hg3',0),
+                      ('hv','l2v',0), ('hc','l2c',1)]}
+
+F('2+1 TCB (CrossMab CH1-CL)', 'T-cell engagers',
+  'Bivalent for the tumour antigen, monovalent for CD3. The tumour Fab is fused head-to-tail '
+  'to the N-terminus of the CD3 CrossFab, which sits proximal to the hinge. Cibisatamab geometry.',
+  tcb_2plus1('CH1-CL', 'CEA'))
+
+F('2+1 TCB (CrossMab VH-VL, charged)', 'T-cell engagers',
+  'The same 2:1 geometry with VH/VL exchanged in the CD3 Fab instead, plus charge pairs in the '
+  'untouched Fabs to suppress the Bence-Jones-like side product. Glofitamab geometry.',
+  tcb_2plus1('VH-VL', 'CD20', charges=True))
+
 # ---- Receptors -----------------------------------------------------------
 F('TCR alpha-beta', 'Receptors', 'The alpha/beta T-cell receptor ectodomain pair.',
   {'chains': [['VA#va','CA#ca'], ['VB#vb','CB#cb']], 'pairs': [('va','vb',0), ('ca','cb',1)]})

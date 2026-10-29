@@ -364,6 +364,8 @@ const LIBRARY = [
  {n:"Zipper-assembled bispecific",c:"Fc fusions",d:"A leucine zipper on each C-terminus forces the two different half-antibodies together.",a:"VH.a(1:7)-CH1(2:8){1}-H(3:11){2}-CH2(4:12)-CH3(5:13)-X(6:14)[TYPE:ZIPPER]|VL.a(7:1)-CL(8:2){1}|VH.b(9:15)-CH1(10:16){1}-H(11:3){2}-CH2(12:4)-CH3(13:5)-X(14:6)[TYPE:ZIPPER]|VL.b(15:9)-CL(16:10){1}"},
  {n:"Trispecific IgG-scFv",c:"Trispecific",d:"A knob-into-hole bispecific with a third specificity appended as an scFv on one chain.",a:"VH.a(1:10)-CH1(2:11){1}-H(3:14){2}-CH2(4:15)-CH3>(5:16)-L(6)[LENGTH:15]-VH.c(7:9)-L(8)[LENGTH:15]-VL.c(9:7)|VL.a(10:1)-CL(11:2){1}|VH.b(12:17)-CH1(13:18){1}-H(14:3){2}-CH2(15:4)-CH3@(16:5)|VL.b(17:12)-CL(18:13){1}"},
  {n:"Trispecific VHH-Fc",c:"Trispecific",d:"Three VHH domains distributed across a knob-into-hole Fc.",a:"VHH.a(1)-L(2)[LENGTH:15]-VHH.b(3)-H(4:8){2}-CH2(5:9)-CH3>(6:10)|VHH.c(7)-H(8:4){2}-CH2(9:5)-CH3@(10:6)"},
+ {n:"2+1 TCB (CrossMab CH1-CL)",c:"T-cell engagers",d:"Bivalent for the tumour antigen, monovalent for CD3. The tumour Fab is fused head-to-tail to the N-terminus of the CD3 CrossFab, which sits proximal to the hinge. Cibisatamab geometry.",a:"VH.a(1:16)[ANTI:CEA]-CH1(2:17){1}-L(3)[LENGTH:10]-VH.b(4:9)[ANTI:CD3e]-CL(5:10){1}-H(6:13){2}-CH2*(7:14)[MOD:NOADCCCDC,NOTE:P329G LALA]-CH3>(8:15)|VL.b(9:4)[ANTI:CD3e]-CH1(10:5){1}|VH.a(11:18)[ANTI:CEA]-CH1(12:19){1}-H(13:6){2}-CH2*(14:7)[MOD:NOADCCCDC,NOTE:P329G LALA]-CH3@(15:8)|VL.a(16:1)[ANTI:CEA]-CL(17:2){1}|VL.a(18:11)[ANTI:CEA]-CL(19:12){1}"},
+ {n:"2+1 TCB (CrossMab VH-VL, charged)",c:"T-cell engagers",d:"The same 2:1 geometry with VH/VL exchanged in the CD3 Fab instead, plus charge pairs in the untouched Fabs to suppress the Bence-Jones-like side product. Glofitamab geometry.",a:"VH.a(1:16)[ANTI:CD20]-CH1*+(2:17){1}[MOD:PI]-L(3)[LENGTH:10]-VL.b(4:9)[ANTI:CD3e]-CH1(5:10){1}-H(6:13){2}-CH2*(7:14)[MOD:NOADCCCDC,NOTE:P329G LALA]-CH3>(8:15)|VH.b(9:4)[ANTI:CD3e]-CL(10:5){1}|VH.a(11:18)[ANTI:CD20]-CH1*+(12:19){1}[MOD:PI]-H(13:6){2}-CH2*(14:7)[MOD:NOADCCCDC,NOTE:P329G LALA]-CH3@(15:8)|VL.a(16:1)[ANTI:CD20]-CL*_(17:2){1}[MOD:PI]|VL.a(18:11)[ANTI:CD20]-CL*_(19:12){1}[MOD:PI]"},
  {n:"TCR alpha-beta",c:"Receptors",d:"The alpha/beta T-cell receptor ectodomain pair.",a:"VA(1:3)-CA(2:4){1}|VB(3:1)-CB(4:2){1}"},
  {n:"TCR gamma-delta",c:"Receptors",d:"The gamma/delta T-cell receptor ectodomain pair.",a:"VG(1:3)-CG(2:4){1}|VD(3:1)-CD(4:2){1}"},
 ].map(x => ({name:x.n, category:x.c, description:x.d, abml:x.a}));
@@ -389,7 +391,7 @@ const slug = n => n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''
    ============================================================ */
 
 /* ---------- grammar tables ---------- */
-const VERSION = '1.2.2';
+const VERSION = '1.3.0';
 const DTYPES = ['VHH','CH1','CH2','CH3','CH4','CH5','VH','VL','CL','VA','VB','VG','VD','CA','CB','CG','CD','H','L','X','C'];
 const MODCH  = '*>@+_!^';
 const MODNAME = {'*':'general modification','>':'knob','@':'hole','+':'positive charge','_':'negative charge','!':'aglycosyl CH2','^':'ADC conjugation site'};

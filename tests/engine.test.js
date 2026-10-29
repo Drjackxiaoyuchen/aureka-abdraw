@@ -75,6 +75,19 @@ test('domains joined by a linker are spaced far enough to show it', () => {
   for (let i = 1; i < ys.length; i++)
     assert.ok(ys[i] - ys[i-1] >= E.GEO.ry * 2, 'gap of ' + (ys[i]-ys[i-1]).toFixed(1) + ' hides the linker');
 });
+test('a linker between stacked Fabs on an arm is given room', () => {
+  // the 2:1 TCB case: a CrossFab fused N-terminally to another Fab on the same arm
+  const tcb = 'VH.b(1:9)-CL(2:10){1}-L(3)[LENGTH:10]-VH.a(4:16)-CH1(5:17){1}-H(6:13){2}-CH2(7:14)-CH3>(8:15)'
+            + '|VL.b(9:1)-CH1(10:2){1}|VH.a(11:18)-CH1(12:19){1}-H(13:6){2}-CH2(14:7)-CH3@(15:8)'
+            + '|VL.a(16:4)-CL(17:5){1}|VL.a(18:11)-CL(19:12){1}';
+  const { L, parsed } = fig(tcb);
+  assert.strictEqual(parsed.errors.length, 0, parsed.errors.join('; '));
+  const lk = L.conns.filter(c => c.kind === 'linker');
+  assert.strictEqual(lk.length, 1, 'expected one arm linker');
+  const gap = Math.hypot(lk[0].b._x - lk[0].a._x, lk[0].b._y - lk[0].a._y);
+  assert.ok(gap > E.GEO.step + E.GEO.linkGap * 0.8,
+            'arm linker squeezed into normal rung spacing: ' + gap.toFixed(1));
+});
 test('declared linker length changes the drawn path', () => {
   const short = paths(fig('VH.a(1:3)-L(2)[LENGTH:5]-VL.a(3:1)').body)[0];
   const long  = paths(fig('VH.a(1:3)-L(2)[LENGTH:25]-VL.a(3:1)').body)[0];

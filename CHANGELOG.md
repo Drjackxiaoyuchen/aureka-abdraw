@@ -4,6 +4,15 @@ Notable changes to Aureka AbDraw. This project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html), and the format of this file
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.2] — 2026-10-29
+
+### Fixed
+
+- **A linker between two Fabs stacked on the same arm is given room.** The spacing rule added in
+  1.1.0 covered columns and C-terminal tails but not arms, so in a 2:1 TCB — a CrossFab fused
+  N-terminally to another Fab — the connecting linker was squeezed into normal rung spacing and
+  all but disappeared. Arms now open the same gap, and a test pins the case down.
+
 ## [1.2.1] — 2026-10-29
 
 ### Fixed

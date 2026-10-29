@@ -389,7 +389,7 @@ const slug = n => n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''
    ============================================================ */
 
 /* ---------- grammar tables ---------- */
-const VERSION = '1.2.1';
+const VERSION = '1.2.2';
 const DTYPES = ['VHH','CH1','CH2','CH3','CH4','CH5','VH','VL','CL','VA','VB','VG','VD','CA','CB','CG','CD','H','L','X','C'];
 const MODCH  = '*>@+_!^';
 const MODNAME = {'*':'general modification','>':'knob','@':'hole','+':'positive charge','_':'negative charge','!':'aglycosyl CH2','^':'ADC conjugation site'};
@@ -619,15 +619,16 @@ function layout(parsed, opt){
     [0,1].forEach(side => {
       const seq = arms[side].slice().reverse();
       const sgn = side === 0 ? -1 : 1;                // local +x of the inboard face
-      let rung = 0;
+      let t = armStart, prevA = null;
       seq.forEach(d => {
         if(placed.has(d)) return;                     // already drawn as someone's partner
-        const t = armStart + rung*GEO.step;
+        /* a linker between two Fabs stacked along the arm needs room, same as in a column */
+        if(prevA && linkedPair(chains[d.ci], prevA, d)) t += GEO.linkGap;
         const cx = dir[side].x * t, cy = dir[side].y * t;
         put(d, cx, cy, rot[side], GEO.rx * sgn, 0);
         const mate = d.pd.find(p => p !== d && !placed.has(p) && !(p.ci !== d.ci && heavySet.has(p.ci)));
         if(mate) put(mate, cx + perp[side].x*GEO.slot, cy + perp[side].y*GEO.slot, rot[side], -GEO.rx * sgn, 1);
-        rung++;
+        prevA = d; t += GEO.step;
       });
     });
   }
